@@ -1,0 +1,156 @@
+diagnosis_prompt: {}
+
+explanation_prompt: {}
+
+parsing_prompts:
+  spectrum_prompt: |
+    Bu görsel bir titreşim analizi kitabından alınmış bir teşhis grafiği.
+    YALNIZCA geçerli JSON döndür, başka hiçbir açıklama ekleme.
+    ÖNEMLİ: figure_ref veya page numarası ÜRETME, bu bilgi ayrıca ekleniyor.
+
+    {
+      "content_type": "spectrum",
+      "description": "2-3 cümlelik teknik açıklama",
+      "fault_type": "örn. parallel_misalignment, unbalance_static, mechanical_looseness_internal, veya null",
+      "domain": "frequency | time | orbit",
+      "direction": "radial | axial | not_specified",
+      "peaks": [
+        {"order": "1X", "relative_amplitude": "low | moderate | dominant | negligible"},
+        {"order": "2X", "relative_amplitude": "..."}
+      ],
+      "sideband_pattern": "none | FP_sidebands | line_frequency_sidebands | subharmonic_half_order | subharmonic_third_order | other",
+      "phase_criterion": "faz ilişkisi bilgisi (örn. 'kaplin üzerinde ~180° faz farkı') veya null",
+      "distinguishing_rule": "Bu grafiği en benzer arıza tipinden ayıran TEK cümlelik kriter",
+      "confidence": "high | medium | low"
+    }
+
+    Eğer domain "time" ise peaks alanı yerine şunu kullan:
+    "time_domain_pattern": {
+      "pattern_type": "impact_spike | beat_modulation | clean_sinusoid | other",
+      "periodicity": "darbeler arası aralığın neyle ilişkili olduğu (örn. '1/rotasyon hızı')"
+    }
+  severity_chart_prompt: |
+    Bu görsel bir titreşim analizi kitabından alınmış bir vibration severity chart
+    (titreşim şiddet tablosu/grafiği). Aşağıdaki JSON şemasına göre YALNIZCA
+    geçerli JSON döndür, başka hiçbir açıklama ekleme:
+
+    {
+      "content_type": "severity_chart",
+      "description": "Tablonun/grafiğin ne gösterdiğine dair 2-3 cümlelik teknik açıklama",
+      "standard": "Standart adı (örn. ISO 10816, VDI 2056, IRD Mechanalysis) veya null",
+      "groups": [
+        {
+          "name": "Grup veya sınıf adı (örn. Group 1, Class I)",
+          "machine_description": "Bu gruba dahil makine tipleri açıklaması",
+          "foundation_type": "rigid veya flexible (varsa, yoksa null)",
+          "zones": {
+            "A": {"min_mm_s": 0, "max_mm_s": 2.3},
+            "B": {"min_mm_s": 2.3, "max_mm_s": 4.5},
+            "C": {"min_mm_s": 4.5, "max_mm_s": 7.1},
+            "D": {"min_mm_s": 7.1, "max_mm_s": null}
+          }
+        }
+      ],
+      "zone_meanings": {
+        "A": "Good / New machine condition",
+        "B": "Allowable / Unlimited long-term operation",
+        "C": "Just tolerable / Short-term operation allowable",
+        "D": "Not permissible / Vibration causes damage"
+      },
+      "measurement_unit": "mm/s RMS veya diğer birim",
+      "frequency_range": "varsa frekans aralığı bilgisi (örn. 10-1000 Hz) yoksa null"
+    }
+
+  bearing_stage_prompt: |
+    Bu görsel bir rulman (rolling element bearing) bozulma aşaması FFT spektrumu.
+    Aşağıdaki JSON şemasına göre YALNIZCA geçerli JSON döndür:
+
+    {
+      "content_type": "bearing_stage",
+      "description": "2-3 cümlelik teknik açıklama",
+      "stage": "stage_1 | stage_2 | stage_3 | stage_4",
+      "zones_visible": ["görsel üzerinde ayırt edilebilen zonlar, örn. 'A','B','C','D'"],
+      "hfd_amplitude_trend": "bu aşamada HFD (high-frequency-detection) genliğinin bir önceki aşamaya göre davranışı (örn. 'ikiye katlandı', 'gürültü tabanına dönüştü')",
+      "distinguishing_rule": "Bu aşamayı bir önceki/sonraki aşamadan ayıran TEK cümlelik kriter",
+      "confidence": "high | medium | low"
+    }
+
+  orbit_prompt: |
+    Bu görsel bir orbit (Lissajous) analizi grafiği. Aşağıdaki JSON şemasına göre
+    YALNIZCA geçerli JSON döndür:
+
+    {
+      "content_type": "orbit_plot",
+      "description": "2-3 cümlelik teknik açıklama",
+      "orbit_shape": "elliptical | circular | banana_shape | figure_eight | inner_loop | irregular",
+      "fault_type": "ilişkili arıza tipi (örn. unbalance, misalignment, mechanical_looseness, hit_and_bounce) veya null",
+      "distinguishing_rule": "Bu şekli benzer arıza orbitlerinden ayıran TEK cümlelik kriter",
+      "confidence": "high | medium | low"
+    }
+
+  unified_prompt: |
+    Bu görsel bir titreşim analizi (vibration analysis) kitabından alınmış.
+    Önce görselin tipini belirle, sonra tipine göre yapılandırılmış bilgiyi çıkar.
+
+    YALNIZCA geçerli JSON döndür, başka hiçbir açıklama ekleme.
+
+    Eğer görsel bir FFT spektrum grafiği, orbit plot, bode plot, cepstrum,
+    waterfall veya benzer bir teşhis grafiği ise:
+    {
+      "content_type": "spectrum",
+      "description": "Grafiğin teknik açıklaması",
+      "fault_type": "ilişkili arıza tipi veya null",
+      "dominant_frequency": ["baskın frekans bileşenleri"],
+      "phase_behavior": "faz bilgisi veya null"
+    }
+
+    Eğer görsel bir vibration severity chart (şiddet tablosu/grafiği) ise:
+    {
+      "content_type": "severity_chart",
+      "description": "Tablo/grafik açıklaması",
+      "standard": "ISO 10816, VDI 2056 vb. veya null",
+      "groups": [
+        {
+          "name": "grup adı",
+          "machine_description": "makine tipi açıklaması",
+          "foundation_type": "rigid veya flexible veya null",
+          "zones": {
+            "A": {"min_mm_s": 0, "max_mm_s": ...},
+            "B": {"min_mm_s": ..., "max_mm_s": ...},
+            "C": {"min_mm_s": ..., "max_mm_s": ...},
+            "D": {"min_mm_s": ..., "max_mm_s": null}
+          }
+        }
+      ],
+      "zone_meanings": {"A": "...", "B": "...", "C": "...", "D": "..."},
+      "measurement_unit": "birim",
+      "frequency_range": "frekans aralığı veya null"
+    }
+
+    Eğer görsel bir ekipman fotoğrafı, dekoratif diyagram veya logo ise:
+    {
+      "content_type": "equipment_photo",
+      "description": "Kısa açıklama"
+    }
+
+    Eğer görsel başka bir teknik diyagram (şematik, montaj çizimi vb.) ise:
+    {
+      "content_type": "diagram",
+      "description": "Diyagramın ne gösterdiğinin açıklaması"
+    }
+
+  vision_table_prompt: |
+    Bu görsel bir teknik kitaptan alınmış bir tablo içeriyor. Tablonun tüm
+    içeriğini satır ve sütun yapısını koruyarak aşağıdaki JSON şemasında döndür,
+    başka hiçbir açıklama ekleme:
+
+    {
+      "table_title": "varsa tablo başlığı",
+      "headers": ["sütun1", "sütun2", ...],
+      "rows": [["hücre1", "hücre2", ...], ...]
+    }
+
+    Önemli:
+    - Birleştirilmiş (merged) hücreleri tekrar eden değerler olarak yaz
+    - Boş hücreleri "" olarak bırak
+    - Sayısal değerleri string olarak yaz

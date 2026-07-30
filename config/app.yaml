@@ -1,0 +1,39 @@
+
+app:
+  name: "VibraDiag"
+  version: "0.1.0"
+  description: "Vibration Analysis and Fault Diagnosis System"
+  debug: false
+
+llm:
+  provider: "groq"
+  model: "llama-3.3-70b-versatile"
+  temperature: 0.2
+  max_tokens: 2048
+  timeout: 60
+
+embeddings:
+  provider: "HuggingFaceEmbeddings"
+  model: "BAAI/bge-large-en-v1.5"
+  device: "mps"
+  batch_size: 32
+  normalize_embeddings: true
+
+streamlit:
+  page_title: "VibraDiag - Fault Diagnosis System"
+  page_icon: "⚡"
+  layout: "wide"
+  show_graph_state: false 
+  show_tool_calls: true 
+
+logging:
+  level: "INFO"                     
+  format: "{time:HH:mm:ss} | {level} | {message}"
+  colorize: true
+
+vision_llm:
+  provider: "gemini"
+  model: "gemini-3.5-flash"
+  timeout: 60
+  max_retries: 4
+

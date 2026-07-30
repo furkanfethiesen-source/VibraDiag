@@ -1,0 +1,9 @@
+parent_child_retrieval:
+  chunking:
+    child_chunk_size: 200
+    child_chunk_overlap: 20
+    parent_chunk_size: 1500
+
+hybrid_search:
+  reranker:
+    model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
