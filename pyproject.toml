@@ -1,0 +1,94 @@
+
+[project]
+name = "vibradiag"
+version = "0.1.0"
+description = "Vibration Analysis and Fault Diagnosis System — Agentic RAG with deterministic signal processing for mechanical and bearing fault detection."
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+license = { text = "MIT" }
+authors = [
+    { name = "Furkan Fethi Esen" },
+]
+
+dependencies = [
+    "langchain>=0.3.25",
+    "langchain-core>=0.3.59",
+    "langchain-community>=0.3.24",
+    "langchain-groq>=0.3.2",
+    "langchain-google-genai>=2.1.5",
+    "langchain-huggingface>=0.2.0",
+    "langchain-chroma>=0.2.4",
+    "langchain-text-splitters>=0.3.8",
+    "langgraph>=0.4.7",
+    "google-genai>=1.18.0",
+    "pymupdf>=1.25.5",
+    "chromadb>=1.0.12",
+    "rank-bm25>=0.2.2",
+    "sentence-transformers>=4.1.0",
+    "numpy>=2.2.6",
+    "scipy>=1.15.3",
+    "pandas>=2.2.3",
+    "matplotlib>=3.10.3",
+    "plotly>=6.1.2",
+    "streamlit>=1.45.1",
+    "pyyaml>=6.0.2",
+    "python-dotenv>=1.1.0",
+    "loguru>=0.7.3",
+    "pydantic>=2.11.4",
+    "pydantic-settings>=2.9.1",
+    "tiktoken>=0.13.0",
+    "requests>=2.34.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.4.1",
+    "pytest-cov>=6.2.1",
+    "pytest-asyncio>=1.0.0",
+    "ruff>=0.12.1",
+    "mypy>=1.16.1",
+    "ipykernel>=6.29.5",
+    "pre-commit>=4.2.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src" = "vibradiag"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "RUF", # ruff-specific
+]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["vibradiag"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-v --tb=short"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
