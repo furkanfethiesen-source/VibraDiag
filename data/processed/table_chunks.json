@@ -1,0 +1,309 @@
+[
+  {
+    "chunk_id": "table_p1_0",
+    "content_type": "table",
+    "page_number": 1,
+    "section_path": "unknown",
+    "table_title": "Syllabus",
+    "headers": [
+      "Material",
+      "No. of hours"
+    ],
+    "rows": [
+      [
+        "1. Introduction\n1.1 Mechanical Vibration\n1.2 Machinery Preventive and Predictive Maintenance\n1.3 Evolution of maintenance philosophies\n1.4 Vibration analysis – a key predictive maintenance technique\n1.5 Vibration Analysis and Measurement Equipment\n2. Measuring Parameters and Vibration Severity Criteria\n2.1 Oscillatory Motion\n2.2 Acceleration, Velocity and Displacement\n2.3 Location and Direction of Measurements\n2.4 Common Vibration Severity Charts and Tables\n3. Vibration Analysis Techniques\n3.1 Definitions\n3.2 Level Measurement\n3.3 Time Waveform\n3.4 FFT Spectrum and Phase Analysis\n3.5 Orbit\n3.6 Bode and Nyquist Plot\n3.7 Cepstrum Analysis\n3.8 Envelope Analysis\n4. Diagnosis of Common Vibration Problems\n4.1 Unbalance and Bent Shaft\n4.2 Bent Shaft\n4.3 Eccentric Rotor\n4.4 Misalignment\n4.5 Mechanical Looseness\n4.6 Resonance\n4.7 Electrical Problems\n4.8 Pumps Related Problems\n4.9 Blowers and Fans Related Problems\n4.10 Compressors Problems\n4.11 Reciprocating Engines Problems\n5. Diagnosis of Special Parts Problems\n5.1 Journal Bearing Problems\n5.2 Roller Bearing Problems\n5.3 Gear Trains Problems\n6. Advanced Techniques\n6.1 Transient Analysis\n6.2 Dual and Multi-Channel Analysis\n6.3 Machine Run-up/Coast-down\n7. Field Balancing\n7.1 Introduction\n7.2 Procedure of Field Balancing",
+        "2\n2\n4\n8\n4\n5\n1"
+      ],
+      [
+        "Total",
+        "28"
+      ]
+    ],
+    "markdown_repr": "| Material | No. of hours |\n| --- | --- |\n| 1. Introduction 1.1 Mechanical Vibration 1.2 Machinery Preventive and Predictive Maintenance 1.3 Evolution of maintenance philosophies 1.4 Vibration analysis – a key predictive maintenance technique 1.5 Vibration Analysis and Measurement Equipment 2. Measuring Parameters and Vibration Severity Criteria 2.1 Oscillatory Motion 2.2 Acceleration, Velocity and Displacement 2.3 Location and Direction of Measurements 2.4 Common Vibration Severity Charts and Tables 3. Vibration Analysis Techniques 3.1 Definitions 3.2 Level Measurement 3.3 Time Waveform 3.4 FFT Spectrum and Phase Analysis 3.5 Orbit 3.6 Bode and Nyquist Plot 3.7 Cepstrum Analysis 3.8 Envelope Analysis 4. Diagnosis of Common Vibration Problems 4.1 Unbalance and Bent Shaft 4.2 Bent Shaft 4.3 Eccentric Rotor 4.4 Misalignment 4.5 Mechanical Looseness 4.6 Resonance 4.7 Electrical Problems 4.8 Pumps Related Problems 4.9 Blowers and Fans Related Problems 4.10 Compressors Problems 4.11 Reciprocating Engines Problems 5. Diagnosis of Special Parts Problems 5.1 Journal Bearing Problems 5.2 Roller Bearing Problems 5.3 Gear Trains Problems 6. Advanced Techniques 6.1 Transient Analysis 6.2 Dual and Multi-Channel Analysis 6.3 Machine Run-up/Coast-down 7. Field Balancing 7.1 Introduction 7.2 Procedure of Field Balancing | 2 2 4 8 4 5 1 |\n| Total | 28 |"
+  },
+  {
+    "chunk_id": "table_p18_vision",
+    "content_type": "table",
+    "page_number": 18,
+    "section_path": "3.2 Level Detection",
+    "table_title": "Conversion between RMS, Peak and Peak-Peak Values",
+    "headers": [
+      "To Get",
+      "Scaled Peak",
+      "Scaled P-P",
+      "RMS"
+    ],
+    "rows": [
+      [
+        "Scaled Peak",
+        "1",
+        "0.5",
+        "1.414"
+      ],
+      [
+        "Scaled P-P",
+        "2",
+        "1",
+        "2.828"
+      ],
+      [
+        "RMS",
+        "0.707",
+        "0.3535",
+        "1"
+      ]
+    ],
+    "markdown_repr": "| To Get | Scaled Peak | Scaled P-P | RMS |\n| --- | --- | --- | --- |\n| Scaled Peak | 1 | 0.5 | 1.414 |\n| Scaled P-P | 2 | 1 | 2.828 |\n| RMS | 0.707 | 0.3535 | 1 |"
+  },
+  {
+    "chunk_id": "table_p29_vision",
+    "content_type": "table",
+    "page_number": 29,
+    "section_path": "3.8 Envelope Analysis",
+    "table_title": "Table 3.2 Typical Filter Setting for Envelope Analysis",
+    "headers": [
+      "Filters",
+      "Frequency Band",
+      "Speed Range",
+      "Analyzing Range"
+    ],
+    "rows": [
+      [
+        "1",
+        "5 – 100 Hz",
+        "0 – 50 RPM",
+        "0 – 10 Hz"
+      ],
+      [
+        "2",
+        "50 – 1,000 Hz",
+        "25 – 500 RPM",
+        "0 – 100 Hz"
+      ],
+      [
+        "3",
+        "500 – 10,000 Hz",
+        "250 – 5,000 RPM",
+        "0 – 1,000 Hz"
+      ],
+      [
+        "4",
+        "5,000 – 40,000 Hz",
+        "2,500 – ... RPM",
+        "0 – 10,000 Hz"
+      ]
+    ],
+    "markdown_repr": "| Filters | Frequency Band | Speed Range | Analyzing Range |\n| --- | --- | --- | --- |\n| 1 | 5 – 100 Hz | 0 – 50 RPM | 0 – 10 Hz |\n| 2 | 50 – 1,000 Hz | 25 – 500 RPM | 0 – 100 Hz |\n| 3 | 500 – 10,000 Hz | 250 – 5,000 RPM | 0 – 1,000 Hz |\n| 4 | 5,000 – 40,000 Hz | 2,500 – ... RPM | 0 – 10,000 Hz |"
+  },
+  {
+    "chunk_id": "table_p47_0+p48",
+    "content_type": "table",
+    "page_number": 47,
+    "section_path": "4.11 Reciprocating Machines Problems",
+    "table_title": "Table 4.1 Predominant Frequency Components of Reciprocating Machines",
+    "headers": [
+      "Description",
+      "Predominant Frequencies",
+      "Cause",
+      "Remedy"
+    ],
+    "rows": [
+      [
+        "Inertia forces",
+        "are 1x and 2xRPM",
+        "Primary and secondary\ninertia forces of piston\nand connecting rod",
+        "Proper design\nand balance\nmasses"
+      ],
+      [
+        "Power pulses",
+        "N\n×RPM for 4-stroke engines\n2\nN x RPM for 2-stroke engines",
+        "Engine power cycle",
+        "Increase number\nof cylinders"
+      ],
+      [
+        "Misfiring piston",
+        "0.5 x RPM for 4-stroke engines\n1 x RPM for 2-stroke engines",
+        "Negative power stroke",
+        "Repair engine"
+      ],
+      [
+        "Worn\nConnecting rod\nbearings",
+        "2 x RPM",
+        "Bearing impact when\npiston changes direction",
+        "Repair engine"
+      ],
+      [
+        "Worn crankshaft\nmain bearings",
+        "Same as power pulses",
+        "Bearing impact each\npower stroke",
+        "Repair engine"
+      ],
+      [
+        "Piston slap",
+        "2 x RPM",
+        "Under heavy load, force\ncomponent\nperpendicular to\nconnecting rod",
+        "Repair engine"
+      ],
+      [
+        "Unbalance inertia\nforces",
+        "2 x RPM and multiples",
+        "Secondary inertia forces\ndue to improper\ncorrection weights",
+        "Selection of\nproper\nreplacement\nparts"
+      ]
+    ],
+    "markdown_repr": "| Description | Predominant Frequencies | Cause | Remedy |\n| --- | --- | --- | --- |\n| Inertia forces | are 1x and 2xRPM | Primary and secondary inertia forces of piston and connecting rod | Proper design and balance masses |\n| Power pulses | N ×RPM for 4-stroke engines 2 N x RPM for 2-stroke engines | Engine power cycle | Increase number of cylinders |\n| Misfiring piston | 0.5 x RPM for 4-stroke engines 1 x RPM for 2-stroke engines | Negative power stroke | Repair engine |\n| Worn Connecting rod bearings | 2 x RPM | Bearing impact when piston changes direction | Repair engine |\n| Worn crankshaft main bearings | Same as power pulses | Bearing impact each power stroke | Repair engine |\n| Piston slap | 2 x RPM | Under heavy load, force component perpendicular to connecting rod | Repair engine |\n| Unbalance inertia forces | 2 x RPM and multiples | Secondary inertia forces due to improper correction weights | Selection of proper replacement parts |"
+  },
+  {
+    "chunk_id": "table_p61_0",
+    "content_type": "table",
+    "page_number": 61,
+    "section_path": "6.2 Dual and Multi-Channel Analysis > 6.2.2 Relative Phase Measurement",
+    "table_title": "Table 6.1 Typical Table for Relative Phase Data",
+    "headers": [
+      "Order",
+      "Ch1 Amp.",
+      "Ch2 Amp",
+      "Relative Phase"
+    ],
+    "rows": [
+      [
+        "1X",
+        "5.21",
+        "2.45",
+        "87˚"
+      ],
+      [
+        "2X",
+        "3.21",
+        "2.12",
+        "123˚"
+      ],
+      [
+        "3X",
+        "1.23",
+        "0.565",
+        "165˚"
+      ],
+      [
+        "…",
+        "",
+        "",
+        ""
+      ]
+    ],
+    "markdown_repr": "| Order | Ch1 Amp. | Ch2 Amp | Relative Phase |\n| --- | --- | --- | --- |\n| 1X | 5.21 | 2.45 | 87˚ |\n| 2X | 3.21 | 2.12 | 123˚ |\n| 3X | 1.23 | 0.565 | 165˚ |\n| … |  |  |  |"
+  },
+  {
+    "chunk_id": "fig_p15_0",
+    "content_type": "severity_chart",
+    "page_number": 15,
+    "section_path": "2.4 Common Vibration Severity Charts and Tables",
+    "source_caption": "(başlık bulunamadı)",
+    "generated_text": "This chart, based on VDI 2056 and ISO 2372 standards, categorizes machine vibration severity using RMS velocity (mm/s) into four zones (A, B, C, D) for different classes of machines (Class I, II, III, IV). Each zone indicates a specific condition, from good to not permissible, depending on the machine type and its foundation.",
+    "structured_data": {
+      "standard": "VDI 2056 and ISO 2372",
+      "groups": [
+        {
+          "name": "Class I",
+          "machine_description": "Individual parts of engines and machines, integrally connected with the complete machine in its normal operating condition. (production electrical motors of up to 15 kW are typical examples of machines in this category).",
+          "foundation_type": null,
+          "zones": {
+            "A": {
+              "min_mm_s": 0,
+              "max_mm_s": 0.71
+            },
+            "B": {
+              "min_mm_s": 0.71,
+              "max_mm_s": 1.8
+            },
+            "C": {
+              "min_mm_s": 1.8,
+              "max_mm_s": 4.5
+            },
+            "D": {
+              "min_mm_s": 4.5,
+              "max_mm_s": null
+            }
+          }
+        },
+        {
+          "name": "Class II",
+          "machine_description": "Medium sized machines, (typically electrical motors with 15 to 75 kW output) without special foundations, rigidly mounted engines or machines (up to 300 kW) on special foundation.",
+          "foundation_type": "rigid",
+          "zones": {
+            "A": {
+              "min_mm_s": 0,
+              "max_mm_s": 0.45
+            },
+            "B": {
+              "min_mm_s": 0.45,
+              "max_mm_s": 2.8
+            },
+            "C": {
+              "min_mm_s": 2.8,
+              "max_mm_s": 7.1
+            },
+            "D": {
+              "min_mm_s": 7.1,
+              "max_mm_s": null
+            }
+          }
+        },
+        {
+          "name": "Class III",
+          "machine_description": "Large prime movers and other large machines with rotating masses mounted on rigid and heavy foundations which are relatively stiff in the direction of vibration measurement.",
+          "foundation_type": "rigid",
+          "zones": {
+            "A": {
+              "min_mm_s": 0,
+              "max_mm_s": 0.71
+            },
+            "B": {
+              "min_mm_s": 0.71,
+              "max_mm_s": 4.5
+            },
+            "C": {
+              "min_mm_s": 4.5,
+              "max_mm_s": 11.2
+            },
+            "D": {
+              "min_mm_s": 11.2,
+              "max_mm_s": null
+            }
+          }
+        },
+        {
+          "name": "Class IV",
+          "machine_description": "Large prime movers and other large machines with rotating masses mounted on rigid and heavy foundations which are relatively soft in the direction of vibration measurement.",
+          "foundation_type": "flexible",
+          "zones": {
+            "A": {
+              "min_mm_s": 0,
+              "max_mm_s": 1.12
+            },
+            "B": {
+              "min_mm_s": 1.12,
+              "max_mm_s": 7.1
+            },
+            "C": {
+              "min_mm_s": 7.1,
+              "max_mm_s": 18
+            },
+            "D": {
+              "min_mm_s": 18,
+              "max_mm_s": null
+            }
+          }
+        }
+      ],
+      "zone_meanings": {
+        "A": "Good",
+        "B": "Allowable",
+        "C": "Just Tolerable",
+        "D": "Not Permissible"
+      },
+      "measurement_unit": "mm/s RMS",
+      "frequency_range": null
+    }
+  }
+]

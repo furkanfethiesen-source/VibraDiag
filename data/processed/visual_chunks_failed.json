@@ -1,0 +1,86 @@
+[
+  {
+    "page": 32,
+    "index": 0,
+    "prompt_label": "UNIFIED",
+    "error": "Vision LLM kalıcı hata (retry yapılmadı): 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.BadRequest', 'fieldViolations': [{'field': 'generation_config.response_schema.properties[17].value', 'description': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.'}]}]}}"
+  },
+  {
+    "page": 32,
+    "index": 1,
+    "prompt_label": "UNIFIED",
+    "error": "Vision LLM kalıcı hata (retry yapılmadı): 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.BadRequest', 'fieldViolations': [{'field': 'generation_config.response_schema.properties[17].value', 'description': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.'}]}]}}"
+  },
+  {
+    "page": 39,
+    "index": 0,
+    "prompt_label": "UNIFIED",
+    "error": "Vision LLM kalıcı hata (retry yapılmadı): 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.BadRequest', 'fieldViolations': [{'field': 'generation_config.response_schema.properties[17].value', 'description': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.'}]}]}}"
+  },
+  {
+    "page": 39,
+    "index": 1,
+    "prompt_label": "UNIFIED",
+    "error": "Vision LLM kalıcı hata (retry yapılmadı): 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.BadRequest', 'fieldViolations': [{'field': 'generation_config.response_schema.properties[17].value', 'description': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.'}]}]}}"
+  },
+  {
+    "page": 42,
+    "index": 0,
+    "prompt_label": "UNIFIED",
+    "error": "Vision LLM kalıcı hata (retry yapılmadı): 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.BadRequest', 'fieldViolations': [{'field': 'generation_config.response_schema.properties[17].value', 'description': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.'}]}]}}"
+  },
+  {
+    "page": 44,
+    "index": 0,
+    "prompt_label": "UNIFIED",
+    "error": "Vision LLM kalıcı hata (retry yapılmadı): 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.BadRequest', 'fieldViolations': [{'field': 'generation_config.response_schema.properties[17].value', 'description': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.'}]}]}}"
+  },
+  {
+    "page": 44,
+    "index": 1,
+    "prompt_label": "UNIFIED",
+    "error": "Vision LLM kalıcı hata (retry yapılmadı): 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.BadRequest', 'fieldViolations': [{'field': 'generation_config.response_schema.properties[17].value', 'description': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.'}]}]}}"
+  },
+  {
+    "page": 46,
+    "index": 0,
+    "prompt_label": "UNIFIED",
+    "error": "Vision LLM kalıcı hata (retry yapılmadı): 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.BadRequest', 'fieldViolations': [{'field': 'generation_config.response_schema.properties[17].value', 'description': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.'}]}]}}"
+  },
+  {
+    "page": 46,
+    "index": 1,
+    "prompt_label": "UNIFIED",
+    "error": "Vision LLM kalıcı hata (retry yapılmadı): 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.BadRequest', 'fieldViolations': [{'field': 'generation_config.response_schema.properties[17].value', 'description': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.'}]}]}}"
+  },
+  {
+    "page": 54,
+    "index": 0,
+    "prompt_label": "UNIFIED",
+    "error": "Vision LLM kalıcı hata (retry yapılmadı): 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.BadRequest', 'fieldViolations': [{'field': 'generation_config.response_schema.properties[17].value', 'description': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.'}]}]}}"
+  },
+  {
+    "page": 54,
+    "index": 1,
+    "prompt_label": "UNIFIED",
+    "error": "Vision LLM kalıcı hata (retry yapılmadı): 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.BadRequest', 'fieldViolations': [{'field': 'generation_config.response_schema.properties[17].value', 'description': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.'}]}]}}"
+  },
+  {
+    "page": 55,
+    "index": 0,
+    "prompt_label": "UNIFIED",
+    "error": "Vision LLM kalıcı hata (retry yapılmadı): 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.BadRequest', 'fieldViolations': [{'field': 'generation_config.response_schema.properties[17].value', 'description': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.'}]}]}}"
+  },
+  {
+    "page": 55,
+    "index": 1,
+    "prompt_label": "UNIFIED",
+    "error": "Vision LLM kalıcı hata (retry yapılmadı): 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.BadRequest', 'fieldViolations': [{'field': 'generation_config.response_schema.properties[17].value', 'description': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.'}]}]}}"
+  },
+  {
+    "page": 57,
+    "index": 0,
+    "prompt_label": "UNIFIED",
+    "error": "Vision LLM kalıcı hata (retry yapılmadı): 400 INVALID_ARGUMENT. {'error': {'code': 400, 'message': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.', 'status': 'INVALID_ARGUMENT', 'details': [{'@type': 'type.googleapis.com/google.rpc.BadRequest', 'fieldViolations': [{'field': 'generation_config.response_schema.properties[17].value', 'description': 'Invalid JSON payload received. Unknown name \"additional_properties\" at \\'generation_config.response_schema.properties[17].value\\': Cannot find field.'}]}]}}"
+  }
+]

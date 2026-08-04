@@ -1,0 +1,600 @@
+[
+  {
+    "chunk_id": "fig_p30_vision_0",
+    "content_type": "spectrum",
+    "page_number": 30,
+    "section_path": "4.1 Unbalance",
+    "source_caption": "Figure 4.1).  Figure 4.1 FFT Analysis of Unbalance   Figure 4.2).",
+    "generated_text": "Bu spektrum grafiği, tüm dengesizlik (unbalance) türlerinin temel göstergesi olan baskın 1X RPM radyal titreşim pikini göstermektedir. Dengesizlik durumunda titreşim genliği, dönüş hızının karesiyle orantılı olarak artış gösterir.",
+    "structured_data": {
+      "fault_type": "unbalance",
+      "domain": "frequency",
+      "direction": "radial",
+      "phase_criterion": null,
+      "distinguishing_rule": "Sadece radyal yönde baskın 1X RPM piki bulunması ve genliğin hızın karesiyle orantılı olarak değişmesi, dengesizliği diğer 1X üreten arızalardan ayırır.",
+      "peaks": [
+        {
+          "order": "1X",
+          "relative_amplitude": "dominant"
+        }
+      ],
+      "sideband_pattern": "none"
+    },
+    "confidence": "high",
+    "needs_review": false
+  },
+  {
+    "chunk_id": "fig_p33_vision_0",
+    "content_type": "spectrum",
+    "page_number": 33,
+    "section_path": "4.3 Bent Shaft",
+    "source_caption": "Figure 4.6 Eccentric Rotor  Figure 4.7)  Figure 4.7 An FFT of a bent shaft with bend near the shaft center  Figure 4.8. Note that when the probe is  Figure \n4.8).",
+    "generated_text": "Eğri mil (bent shaft) arızasını gösteren bu frekans spektrumunda, aksiyal yönde yüksek genlikli 1X piki ve ona eşlik eden daha düşük genlikli bir 2X piki görülmektedir. Bu durum mil eğriliğinin tipik bir göstergesidir.",
+    "structured_data": {
+      "fault_type": "bent_shaft",
+      "domain": "frequency",
+      "direction": "axial",
+      "phase_criterion": "Prob dikey düzlemden yatay düzleme taşındığında faz okumasında değişiklik gözlenmez (görsel, iki yatak arasında yaklaşık 180° eksenel faz farkını da göstermektedir).",
+      "distinguishing_rule": "Eğri mil arızasında aksiyal yöndeki 1X titreşimi baskındır ve mil boyunca eksenel faz farkı 180 derecedir.",
+      "peaks": [
+        {
+          "order": "1X",
+          "relative_amplitude": "dominant"
+        },
+        {
+          "order": "2X",
+          "relative_amplitude": "moderate"
+        }
+      ],
+      "sideband_pattern": "none"
+    },
+    "confidence": "high",
+    "needs_review": false
+  },
+  {
+    "chunk_id": "fig_p33_vision_1",
+    "content_type": "spectrum",
+    "page_number": 33,
+    "section_path": "4.2 Eccentric Rotor",
+    "source_caption": "Figure 4.6 Eccentric Rotor  Figure 4.7)  Figure 4.7 An FFT of a bent shaft with bend near the shaft center  Figure 4.8. Note that when the probe is  Figure \n4.8).",
+    "generated_text": "Bu grafik, eksantrik kasnak (eccentric pulley) arızasını ve bunun faz karakteristiğini açıklamaktadır. Kasnağın geometrik merkezi ile dönme merkezinin çakışmaması, özellikle kayış gerginliği doğrultusunda yüksek 1X titreşim genliğine neden olur.",
+    "structured_data": {
+      "fault_type": "eccentricity",
+      "domain": "frequency",
+      "direction": "radial",
+      "phase_criterion": "Yatay ve dikey (H ve V) yönler arasındaki faz farkı 0° veya 180°'dir.",
+      "distinguishing_rule": "Standart dengesizlikte (unbalance) yatay ve dikey faz farkı yaklaşık 90° iken, eksantrik kasnak durumunda bu fark 0° veya 180° olur.",
+      "peaks": [
+        {
+          "order": "1X",
+          "relative_amplitude": "dominant"
+        }
+      ],
+      "sideband_pattern": "none"
+    },
+    "confidence": "high",
+    "needs_review": true
+  },
+  {
+    "chunk_id": "fig_p35_vision_0",
+    "content_type": "spectrum",
+    "page_number": 35,
+    "section_path": "4.4 Misalignment",
+    "source_caption": "Figure 4.9 Misalignment  Figure 4.10 FFT Spectrum for Angular Misalignment  Figure 4.11.",
+    "generated_text": "Açısal hizasızlık (angular misalignment) durumunda eksenel yönde (axial) yüksek titreşim genlikleri görülür. Spektrumda tipik olarak baskın bir 1X piki ile birlikte azalan genliklerde 2X ve 3X harmonikleri gözlemlenir.",
+    "structured_data": {
+      "fault_type": "angular_misalignment",
+      "domain": "frequency",
+      "direction": "axial",
+      "phase_criterion": "Motor ve yük tarafındaki prob'lar zıt yönlerde konumlandırıldığında, kaplin boyunca eksenel titreşim aynı fazdadır (in-phase).",
+      "distinguishing_rule": "Açısal hizasızlık eksenel yönde baskın 1X titreşimi ve zıt yönlü prob konumlandırmasıyla ölçülen in-phase eksenel faz ile karakterize edilirken, paralel hizasızlık radyal yönde baskın 2X titreşimi ve 180 derece faz farkı üretir.",
+      "peaks": [
+        {
+          "order": "1X",
+          "relative_amplitude": "dominant"
+        },
+        {
+          "order": "2X",
+          "relative_amplitude": "moderate"
+        },
+        {
+          "order": "3X",
+          "relative_amplitude": "low"
+        }
+      ],
+      "sideband_pattern": "none"
+    },
+    "confidence": "high",
+    "needs_review": false
+  },
+  {
+    "chunk_id": "fig_p35_vision_1",
+    "content_type": "spectrum",
+    "page_number": 35,
+    "section_path": "4.4 Misalignment",
+    "source_caption": "Figure 4.9 Misalignment  Figure 4.10 FFT Spectrum for Angular Misalignment  Figure 4.11.",
+    "generated_text": "Açısal hizasızlık durumunda, mil bir tam dönüş yaparken titreşim döngüsü iki kez tekrarlanabilir. Bu davranış, spektrumda 1X'e ek olarak belirgin bir 2X eksenel titreşim bileşeni üretir. Kaplin boyunca eksenel titreşim, karşıt yönlerde konumlandırılmış prob'larla ölçüldüğünde aynı fazdadır (in-phase).",
+    "structured_data": {
+      "fault_type": "angular_misalignment",
+      "domain": "time",
+      "direction": "axial",
+      "phase_criterion": "Motor ve yük tarafındaki prob'lar zıt yönlerde konumlandırıldığında, kaplin boyunca eksenel titreşim aynı fazdadır (in-phase). (Not: Bu, paralel hizasızlıktaki 180° faz farkından farklıdır.)",
+      "distinguishing_rule": "Bir devirde iki tam döngü (2X) oluşması, açısal hizasızlığın karakteristik bir sonucudur ve bu 2X bileşeni, in-phase eksenel faz ilişkisiyle birlikte değerlendirilmelidir.",
+      "time_domain_pattern": null
+    },
+    "confidence": "high",
+    "needs_review": false
+  },
+  {
+    "chunk_id": "fig_p36_vision_7",
+    "content_type": "spectrum",
+    "page_number": 36,
+    "section_path": "4.4 Misalignment",
+    "source_caption": "Figure 4.11 Axial Vibration Across Coupling for Angular Misalignment  Figure 4.9, results in 2 hits per cycle and therefore a 2xRPM  Figure 4.13. As stated earlier, pure parallel misalignment is rare  Figure 4.12) or even a whole series of high-frequency  Figure 4.12 FFT Spectrum for Parallel Misalignment  Figure 4.13 Phase Relation of Vertical Vibration Across Coupling for Offset Misalignment",
+    "generated_text": "Paralel hizasızlık (parallel misalignment) durumunda radyal yönde alınan titreşim spektrumunu gösteren grafik. Spektrumda 2X frekansındaki titreşim genliği baskın olup, 1X ve 3X harmonikleri de düşük seviyelerde mevcuttur.",
+    "structured_data": {
+      "fault_type": "parallel_misalignment",
+      "domain": "frequency",
+      "direction": "radial",
+      "phase_criterion": "Kaplin boyunca radyal yönde yaklaşık 180 derece faz farkı görülür.",
+      "distinguishing_rule": "Radyal yönde baskın 2X genliği ve kaplin boyunca radyal yönde 180 derece faz farkı ile açısal hizasızlıktan ayrılır.",
+      "peaks": [
+        {
+          "order": "1X",
+          "relative_amplitude": "low"
+        },
+        {
+          "order": "2X",
+          "relative_amplitude": "dominant"
+        },
+        {
+          "order": "3X",
+          "relative_amplitude": "low"
+        }
+      ],
+      "sideband_pattern": "none"
+    },
+    "confidence": "high",
+    "needs_review": false
+  },
+  {
+    "chunk_id": "fig_p37_vision_0",
+    "content_type": "spectrum",
+    "page_number": 37,
+    "section_path": "4.5 Mechanical Looseness",
+    "source_caption": "Figure 4.14 FFT of Loose Internal Assembly",
+    "generated_text": "İç montaj gevşekliği (loose internal assembly) durumunda radyal yönde ölçülen frekans spektrumudur. Spektrumda 2X piki baskın olmakla birlikte, karakteristik yarım katlı (0.5X, 1.5X vb.) subharmonikler ve çoklu harmonikler mevcuttur.",
+    "structured_data": {
+      "fault_type": "mechanical_looseness_internal",
+      "domain": "frequency",
+      "direction": "radial",
+      "phase_criterion": "Faz ölçümleri genellikle kararsızdır ve zamana veya yönlere göre büyük değişkenlik gösterir.",
+      "distinguishing_rule": "Spektrumda tam harmoniklerin yanı sıra belirgin yarım katlı (0.5X, 1.5X, 2.5X) subharmoniklerin bulunması bu durumu hizasızlıktan ayırır.",
+      "peaks": [
+        {
+          "order": "0.5X",
+          "relative_amplitude": "moderate"
+        },
+        {
+          "order": "1X",
+          "relative_amplitude": "moderate"
+        },
+        {
+          "order": "1.5X",
+          "relative_amplitude": "low"
+        },
+        {
+          "order": "2X",
+          "relative_amplitude": "dominant"
+        },
+        {
+          "order": "2.5X",
+          "relative_amplitude": "low"
+        },
+        {
+          "order": "3X",
+          "relative_amplitude": "moderate"
+        },
+        {
+          "order": "4X",
+          "relative_amplitude": "moderate"
+        },
+        {
+          "order": "5X",
+          "relative_amplitude": "low"
+        },
+        {
+          "order": "6X",
+          "relative_amplitude": "moderate"
+        }
+      ],
+      "sideband_pattern": "subharmonic_half_order"
+    },
+    "confidence": "high",
+    "needs_review": false
+  },
+  {
+    "chunk_id": "fig_p38_vision_0",
+    "content_type": "spectrum",
+    "page_number": 38,
+    "section_path": "4.5 Mechanical Looseness",
+    "source_caption": "Figure 4.15 FFT of Mechanical Looseness  Figure 4.16 Mechanical Looseness Illustrations  Figure 4.17). Phase analysis may  Figure 4.17). Soft foot tends to amplify vibration problem due to reduced  Figure 4.18 for unbalance condition.",
+    "generated_text": "Görsel, gevşek temel cıvataları veya yapısal gevşeklik (mechanical looseness) nedeniyle makine ayağının zemine vurma/sallanma mekanizmasını açıklamaktadır. Bu periyodik darbeler spektrumda karakteristik olarak 2X ve yüksek harmonik bileşenler üretir.",
+    "structured_data": {
+      "fault_type": "mechanical_looseness",
+      "domain": "frequency",
+      "direction": "radial",
+      "phase_criterion": null,
+      "distinguishing_rule": "Makine ayağının zemine her çarpması (hit) spektrumda 2X frekansında baskın pikler ve çoklu harmonikler oluşturarak gevşekliği doğrular.",
+      "peaks": [
+        {
+          "order": "1X",
+          "relative_amplitude": "moderate"
+        },
+        {
+          "order": "2X",
+          "relative_amplitude": "dominant"
+        },
+        {
+          "order": "harmonics",
+          "relative_amplitude": "moderate"
+        }
+      ],
+      "sideband_pattern": "none"
+    },
+    "confidence": "high",
+    "needs_review": false
+  },
+  {
+    "chunk_id": "fig_p38_vision_1",
+    "content_type": "spectrum",
+    "page_number": 38,
+    "section_path": "4.5 Mechanical Looseness",
+    "source_caption": "Figure 4.15 FFT of Mechanical Looseness  Figure 4.16 Mechanical Looseness Illustrations  Figure 4.17). Phase analysis may  Figure 4.17). Soft foot tends to amplify vibration problem due to reduced  Figure 4.18 for unbalance condition.",
+    "generated_text": "Makine şasisi veya taban plakası gevşekliğini gösteren bu spektrum, radyal yönde yüksek genlikli 2X piki ve karakteristik 0.5X alt harmoniği ile birlikte çoklu harmonik bileşenler içerir. Bu durum, gevşeklikten kaynaklanan yapısal doğrusal olmayan tepkiyi temsil eder.",
+    "structured_data": {
+      "fault_type": "mechanical_looseness",
+      "domain": "frequency",
+      "direction": "radial",
+      "phase_criterion": "Gevşek bağlantı noktalarında faz açısının kararsız olması veya yönsel olarak büyük değişiklikler göstermesi.",
+      "distinguishing_rule": "0.5X alt harmoniğinin varlığı ve baskın 2X piki ile birlikte çoklu harmoniklerin bir arada bulunması, gevşekliği hizasızlıktan ayırır.",
+      "peaks": [
+        {
+          "order": "0.5X",
+          "relative_amplitude": "low"
+        },
+        {
+          "order": "1X",
+          "relative_amplitude": "low"
+        },
+        {
+          "order": "2X",
+          "relative_amplitude": "dominant"
+        },
+        {
+          "order": "3X",
+          "relative_amplitude": "low"
+        },
+        {
+          "order": "4X",
+          "relative_amplitude": "low"
+        },
+        {
+          "order": "5X",
+          "relative_amplitude": "low"
+        },
+        {
+          "order": "6X",
+          "relative_amplitude": "low"
+        }
+      ],
+      "sideband_pattern": "subharmonic_half_order"
+    },
+    "confidence": "high",
+    "needs_review": false
+  },
+  {
+    "chunk_id": "fig_p43_vision_0",
+    "content_type": "spectrum",
+    "page_number": 43,
+    "section_path": "4.7 Electrical Problems",
+    "source_caption": "Figure 4.23 1xRPM and Harmonics with FP Sidebands  Figure 4.24).  Figure 4.24 Loose Rotor Bars Typical FFT Spectrum",
+    "generated_text": "Rotor kaynaklı elektriksel arızaları (örneğin gevşek rotor çubukları) gösteren frekans spektrumu. Spektrumda düşük seviyeli 1X ve 2X piklerinin yanı sıra, yüksek frekansta hat frekansı (FL) yan bantlarına sahip Rotor Çubuk Geçiş Frekansı (RBPF) piki karakteristiktir.",
+    "structured_data": {
+      "fault_type": "loose_rotor_bars",
+      "domain": "frequency",
+      "direction": "radial",
+      "phase_criterion": null,
+      "distinguishing_rule": "RBPF (Rotor Çubuk Geçiş Frekansı) etrafında hat frekansı (FL) yan bantlarının bulunması, bu elektriksel rotor arızasını mekanik gevşeklik veya rulman arızalarından ayırır.",
+      "peaks": [
+        {
+          "order": "1X",
+          "relative_amplitude": "low"
+        },
+        {
+          "order": "2X",
+          "relative_amplitude": "low"
+        },
+        {
+          "order": "RBPF",
+          "relative_amplitude": "moderate"
+        }
+      ],
+      "sideband_pattern": "line_frequency_sidebands"
+    },
+    "confidence": "high",
+    "needs_review": false
+  },
+  {
+    "chunk_id": "fig_p43_vision_1",
+    "content_type": "spectrum",
+    "page_number": 43,
+    "section_path": "4.7 Electrical Problems",
+    "source_caption": "Figure 4.23 1xRPM and Harmonics with FP Sidebands  Figure 4.24).  Figure 4.24 Loose Rotor Bars Typical FFT Spectrum",
+    "generated_text": "Kırık veya çatlak rotor çubuklarının (broken or cracked rotor bars) neden olduğu radyal titreşim spektrumudur. Tüm harmoniklerin (1X, 2X, 3X, 4X) etrafında kutup geçiş frekansı (F_p) yan bantları oluşur.",
+    "structured_data": {
+      "fault_type": "broken_rotor_bars",
+      "domain": "frequency",
+      "direction": "radial",
+      "phase_criterion": null,
+      "distinguishing_rule": "Tüm motor devir harmoniklerinin (1X, 2X, 3X, vb.) etrafında kutup geçiş frekansı (F_p) yan bantlarının bulunması.",
+      "peaks": [
+        {
+          "order": "1X",
+          "relative_amplitude": "moderate"
+        },
+        {
+          "order": "2X",
+          "relative_amplitude": "moderate"
+        },
+        {
+          "order": "3X",
+          "relative_amplitude": "low"
+        },
+        {
+          "order": "4X",
+          "relative_amplitude": "low"
+        }
+      ],
+      "sideband_pattern": "FP_sidebands"
+    },
+    "confidence": "high",
+    "needs_review": false
+  },
+  {
+    "chunk_id": "fig_p45_vision_0",
+    "content_type": "spectrum",
+    "page_number": 45,
+    "section_path": "4.8 Pumps Related Problems",
+    "source_caption": "Figure 4.27 FFT Spectrum for Phasing Problem  Figure 4.28) are characteristics of pumps and fans and  Figure 4.28 Hydrodynamic Forces",
+    "generated_text": "Bu spektrum, pompa/fan uygulamalarında kanat/vane geçiş frekansı (BPF) ve ikinci harmoniği (2X BPF)'deki yüksek titreşim seviyelerini göstermektedir. BPF, çark ile diffüzör/gövde arasındaki boşluk sorunlarından kaynaklanır; genellikle destrüktif değildir ancak gürültü ve rulman yükü artışına yol açabilir.",
+    "structured_data": {
+      "fault_type": "blade_pass_vane_pass",
+      "domain": "frequency",
+      "direction": "not_specified",
+      "phase_criterion": null,
+      "distinguishing_rule": "BPF ve 2X BPF frekanslarında belirgin piklerin oluşması ve bu piklerin etrafında 1X yan bantlarının bulunması, bu durumu mekanik gevşeklik veya hizasızlıktan ayırır.",
+      "peaks": [
+        {
+          "order": "1X",
+          "relative_amplitude": "moderate"
+        },
+        {
+          "order": "2X",
+          "relative_amplitude": "low"
+        },
+        {
+          "order": "BPF",
+          "relative_amplitude": "dominant"
+        },
+        {
+          "order": "2X BPF",
+          "relative_amplitude": "dominant"
+        }
+      ],
+      "sideband_pattern": "none"
+    },
+    "confidence": "high",
+    "needs_review": true
+  },
+  {
+    "chunk_id": "fig_p45_vision_1",
+    "content_type": "spectrum",
+    "page_number": 45,
+    "section_path": "4.7 Electrical Problems",
+    "source_caption": "Figure 4.27 FFT Spectrum for Phasing Problem  Figure 4.28) are characteristics of pumps and fans and  Figure 4.28 Hydrodynamic Forces",
+    "generated_text": "Elektriksel fazlama (phasing) sorunlarını gösteren bu spektrumda, hat frekansının iki katında (2 FL) yüksek genlikli bir pik ve bu pikin etrafında 1/3 FL aralıklı yan bantlar gözlenir.",
+    "structured_data": {
+      "fault_type": "electrical_phasing",
+      "domain": "frequency",
+      "direction": "not_specified",
+      "phase_criterion": null,
+      "distinguishing_rule": "BPF ve 2X BPF frekanslarında belirgin, keskin piklerin oluşması ve bunların rotor-stator boşluk sorunlarıyla ilişkili olması, bu durumu mekanik gevşeklik veya hizasızlıktan ayırır.",
+      "peaks": [
+        {
+          "order": "1X",
+          "relative_amplitude": "low"
+        },
+        {
+          "order": "2FL",
+          "relative_amplitude": "dominant"
+        }
+      ],
+      "sideband_pattern": "subharmonic_third_order"
+    },
+    "confidence": "high",
+    "needs_review": false
+  },
+  {
+    "chunk_id": "fig_p51_vision_0",
+    "content_type": "bearing_stage",
+    "page_number": 51,
+    "section_path": "5.2 Roller Bearing Problems",
+    "source_caption": "Figure 5.3):  Figure 5.3 High HFD due to Bearing Defect in Stage 1",
+    "generated_text": "Bu spektrum, rulman hasarının en erken evresi olan Aşama 1'i temsil etmektedir. Bu aşamada geleneksel hız spektrumunda (B ve C bölgelerinde) herhangi bir arıza belirtisi görülmezken, ultra-yüksek frekanslı HFD (High Frequency Detection) bölgesinde (D bölgesi) ilk sinyaller belirmeye başlar.",
+    "structured_data": {
+      "stage": "stage_1",
+      "zones_visible": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "hfd_amplitude_trend": "HFD genliği ilk kez yükselmeye başlar ve normal arka plan gürültüsünün üzerine çıkar.",
+      "distinguishing_rule": "Geleneksel spektrumda (B ve C bölgelerinde) hiçbir rulman arıza frekansı veya rezonans piki bulunmazken, yalnızca HFD (D bölgesi) sinyalinde ilk artışın görülmesidir."
+    },
+    "confidence": "high",
+    "needs_review": false
+  },
+  {
+    "chunk_id": "fig_p52_vision_0",
+    "content_type": "bearing_stage",
+    "page_number": 52,
+    "section_path": "5.2 Roller Bearing Problems",
+    "source_caption": "Figure 5.4.  Figure 5.4 Bearing Defect in Stage 2, Components Natural Frequencies plus HFD   Figure 5.5), the discrete bearing frequencies and harmonics are visible  Figure 5.5 Bearing Defect in Stage 3, Defect, Components Natural and HFD Frequencies  Figure 5.6), the pits merge with each other, creating rough tracks and spalling",
+    "generated_text": "Bu spektrum ve fiziksel hasar görseli, rulman hasarının 3. aşamasını (Stage 3) temsil etmektedir. Bu aşamada, rulman iç/dış bilezik arıza frekansları (BPFI, BPFO) ve bunların harmonikleri belirginleşir, etraflarında dönme hızının (1x) yan bantları (sidebands) oluşur ve hasar gözle görülebilir boyuta ulaşır.",
+    "structured_data": {
+      "stage": "stage_3",
+      "zones_visible": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "hfd_amplitude_trend": "Yüksek frekans (HFD) genlikleri bu aşamada artmaya devam eder ve tepe noktasına yaklaşır.",
+      "distinguishing_rule": "Rulman arıza frekanslarının (BPFO/BPFI) etrafında belirgin yan bantların (sidebands) oluşması ve arızanın fiziksel olarak gözle görülebilir hale gelmesi bu aşamayı tanımlar."
+    },
+    "confidence": "high",
+    "needs_review": false
+  },
+  {
+    "chunk_id": "fig_p52_vision_1",
+    "content_type": "bearing_stage",
+    "page_number": 52,
+    "section_path": "5.2 Roller Bearing Problems",
+    "source_caption": "Figure 5.4.  Figure 5.4 Bearing Defect in Stage 2, Components Natural Frequencies plus HFD   Figure 5.5), the discrete bearing frequencies and harmonics are visible  Figure 5.5 Bearing Defect in Stage 3, Defect, Components Natural and HFD Frequencies  Figure 5.6), the pits merge with each other, creating rough tracks and spalling",
+    "generated_text": "Bu spektrum, rulman arızasının 2. aşamasını (Stage 2) göstermektedir. Bu evrede, mikroskobik kusurlar rulman elemanlarının doğal frekanslarını uyararak Zone C bölgesinde yan bantlı rezonans zirveleri oluşturur, ancak Zone B'de henüz belirgin arıza frekansları (BPFO, BPFI vb.) gözlenmez.",
+    "structured_data": {
+      "stage": "stage_2",
+      "zones_visible": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "hfd_amplitude_trend": "Aşama 1'e kıyasla artış göstermeye devam eder.",
+      "distinguishing_rule": "Rulman doğal frekanslarının (Zone C) yan bantlarla birlikte uyarılmasına rağmen, Zone B'de henüz temel rulman arıza frekanslarının (BPFO, BPFI vb.) oluşmamış olmasıdır."
+    },
+    "confidence": "high",
+    "needs_review": false
+  },
+  {
+    "chunk_id": "fig_p53_vision_0",
+    "content_type": "bearing_stage",
+    "page_number": 53,
+    "section_path": "5.2 Roller Bearing Problems",
+    "source_caption": "Figure 5.6 Stage 4 Shows Merged Defect and Components Natural Frequencies and High HFD  Figure 5.7).",
+    "generated_text": "Rulman hasarının son aşaması (Stage 4) olan bu görselde, iç/dış bilezik kusur frekansları (BPFO, BPFI) ve bileşen doğal frekansları birbirine karışarak geniş bantlı, rastgele bir yüksek frekans 'gürültü tabanı' (noise floor) oluşturmuştur. Fiziksel olarak pist ve yuvarlanma elemanlarında birleşmiş çukurlaşma (spalling) görülür; 1×RPM genliği de yükselmeye başlar.",
+    "structured_data": {
+      "stage": "stage_4",
+      "zones_visible": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "hfd_amplitude_trend": "artış trendini sürdürerek yüksek seviyelerde kalır",
+      "distinguishing_rule": "Stage 3'ü Stage 4'ten ayıran şey, ayrık (discrete) frekansların Stage 4'te artık birbirine karışıp geniş bantlı rastgele gürültüye dönüşmesidir."
+    },
+    "confidence": "high",
+    "needs_review": true
+  },
+  {
+    "chunk_id": "fig_p56_vision_0",
+    "content_type": "spectrum",
+    "page_number": 56,
+    "section_path": "5.3 Gears Problems",
+    "source_caption": "Figure 5.11 Gear Misalignment Vibration Problem  Figure 5.12).  Figure 5.12 Time Waveform for a Cracked or Broken Gear Tooth",
+    "generated_text": "Zaman dalga formunda, kırık bir dişli dişinin her temasında oluşan yüksek genlikli darbe sinyalleri net bir şekilde görülmektedir. Bu darbeler, hasarlı dişlinin dönüş hızına karşılık gelen periyotlarla tekrarlanır. Darbeler arasındaki düşük genlikli sinyaller ise normal dişli temas titreşimlerini temsil eder.",
+    "structured_data": {
+      "fault_type": "broken_gear_tooth",
+      "domain": "time",
+      "direction": "not_specified",
+      "phase_criterion": null,
+      "distinguishing_rule": "Kırık dişli arızası, zaman dalga formunda her bir şaft dönüşünde bir kez meydana gelen çok belirgin, keskin ve periyodik darbe sinyalleri ile karakterize edilir.",
+      "time_domain_pattern": null
+    },
+    "confidence": "high",
+    "needs_review": false
+  },
+  {
+    "chunk_id": "fig_p56_vision_1",
+    "content_type": "spectrum",
+    "page_number": 56,
+    "section_path": "5.3 Gears Problems",
+    "source_caption": "Figure 5.11 Gear Misalignment Vibration Problem  Figure 5.12).  Figure 5.12 Time Waveform for a Cracked or Broken Gear Tooth",
+    "generated_text": "Dişli hizasızlığı (gear misalignment) durumunu gösteren frekans spektrumudur. Düz dişlilerde radyal, helis dişlilerde ise eksenel yönde yüksek genlikli 1X ve 2X devir frekansları ile yan bantlara sahip GMF ve 2X GMF bileşenleri gözlenir.",
+    "structured_data": {
+      "fault_type": "gear_misalignment",
+      "domain": "frequency",
+      "direction": "radial or axial",
+      "phase_criterion": null,
+      "distinguishing_rule": "Dişli hizasızlığını normal aşınmadan ayıran temel fark, GMF'nin yanı sıra özellikle 2X GMF genliğinin yüksek olması ve etrafında belirgin yan bantların bulunmasıdır.",
+      "peaks": [
+        {
+          "order": "1X Gear rpm",
+          "relative_amplitude": "moderate"
+        },
+        {
+          "order": "2X",
+          "relative_amplitude": "low"
+        },
+        {
+          "order": "1X Pinion rpm",
+          "relative_amplitude": "dominant"
+        },
+        {
+          "order": "GMF",
+          "relative_amplitude": "low"
+        },
+        {
+          "order": "2X GMF",
+          "relative_amplitude": "moderate"
+        }
+      ],
+      "sideband_pattern": "other"
+    },
+    "confidence": "high",
+    "needs_review": false
+  },
+  {
+    "chunk_id": "fig_p59_vision_0",
+    "content_type": "orbit_plot",
+    "page_number": 59,
+    "section_path": "6.2 Dual and Multi-Channel Analysis > 6.2.1 Orbit Analysis",
+    "source_caption": "Figure 6.3. These types of measurements are relative  Figure 6.3 Orientation of Proximity Probes  Figure 6.4 shows a small unbalance  Figure 6.4 Orbit for Unbalance Condition",
+    "generated_text": "Hafif eliptik şekle sahip bu 1X filtreli orbit grafiği, küçük bir dengesizlik (unbalance) durumunu göstermektedir. Saf dairesel bir orbitten farklı olarak hafif eliptikliğin varlığı, hafif düzeyde bir dengesizliğin işaretidir.",
+    "structured_data": {
+      "orbit_shape": "elliptical",
+      "fault_type": "unbalance",
+      "distinguishing_rule": "Orbit, saf bir daireden ziyade hafif eliptik bir forma sahiptir; bu hafif eliptiklik derecesi (yüksek eliptiklik veya banana/figure-eight şekli değil) küçük düzeyde bir dengesizliği işaret eder. Filtrelenmemiş orbitte iç döngülerin (hit-and-bounce) veya belirgin banana/sekiz şeklinin (hizasızlık) bulunmaması, bu durumu daha ciddi arızalardan ayırır."
+    },
+    "confidence": "high",
+    "needs_review": true
+  },
+  {
+    "chunk_id": "fig_p60_vision_0",
+    "content_type": "orbit_plot",
+    "page_number": 60,
+    "section_path": "6.2 Dual and Multi-Channel Analysis > 6.2.1 Orbit Analysis",
+    "source_caption": "Figure 6.5 shows a \"non-filtered\" orbit plot of the same shaft as discussed above.  Figure 6.5 Hit and Bounce Orbit Analysis  Figure 6.6. Resonance and excessive  Figure 6.6 Typical Orbit for Misalignment Condition  Figure 6.7 shows  Figure 6.7 Orbit for Mechanical Looseness Condition",
+    "generated_text": "Grafik, aşırı aşınmadan kaynaklanan mekanik gevşeklik (mechanical looseness) durumunda gözlenen düzensiz, çoklu döngülü bir orbit yapısını göstermektedir. Bu orbit, sürtünme (rub) durumunda görülen orbite oldukça benzerdir; ancak gevşeklikte mil hareketi ileri (forward) yönde gerçekleşirken, sürtünmede bu hareket tipik olarak ters (reverse) yönlüdür. Alt senkron etkiler (subsynchronous effects) ikincil döngüler (secondary loops) olarak orbitte görünür.",
+    "structured_data": {
+      "orbit_shape": "irregular",
+      "fault_type": "mechanical_looseness",
+      "distinguishing_rule": "Orbit şekli sürtünme (rub) ile neredeyse aynıdır; ikisini ayıran temel kriter mil hareketinin yönüdür — gevşeklikte ileri yönlü, sürtünmede ters yönlüdür. Düzenli, tek döngülü dengesizlik/hizasızlık orbitlerinden ise çoklu ve kararsız ikincil döngülerin varlığıyla ayrılır."
+    },
+    "confidence": "high",
+    "needs_review": false
+  }
+]
