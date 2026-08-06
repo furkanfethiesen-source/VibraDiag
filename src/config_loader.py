@@ -20,7 +20,6 @@ class RetrievalConfig(BaseModel):
     parser: Dict[str, Any] = {}
     visual_retrieval: Dict[str, Any] = {}
 
-
 class PromptsConfig(BaseModel):
     diagnosis_prompt: Dict[str, Any]
     explanation_prompt: Dict[str, Any]
