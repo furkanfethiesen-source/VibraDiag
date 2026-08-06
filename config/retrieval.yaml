@@ -7,3 +7,16 @@ parent_child_retrieval:
 hybrid_search:
   reranker:
     model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    batch_size: 32
+
+qdrant:
+  persist_path: "./qdrant_data"
+  text_collection: "vibra_text_child"
+  visual_collection: "vibra_visual"
+  model_serving: "local"  # "local" | "tei" (TEI ertelenmiştir)
+
+sparse_encoder:
+  model: "Qdrant/bm42-all-minilm-l6-v2-attentions"
+
+docstore:
+  persist_path: "./docstore.db"
