@@ -21,9 +21,10 @@ class RetrievalConfig(BaseModel):
     visual_retrieval: Dict[str, Any] = {}
 
 class PromptsConfig(BaseModel):
-    diagnosis_prompt: Dict[str, Any]
-    explanation_prompt: Dict[str, Any]
-    parsing_prompts: Dict[str, Any]
+    diagnosis_prompt: Dict[str, Any] = {}
+    explanation_prompt: Dict[str, Any] = {}
+    parsing_prompts: Dict[str, Any] = {}
+    generation_prompt: Dict[str, Any] = {}
 
 
 @lru_cache(maxsize=1)
