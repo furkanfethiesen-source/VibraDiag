@@ -188,3 +188,14 @@ generation_prompt:
     3. ISO zone değerlendirmesini açıkla.
     4. Tespit edilen frekans bileşenlerinin hangi arıza tipiyle eşleştiğini detaylandır.
     5. Acil müdahale gerektiren durumları vurgula.
+
+  initial_signal_query_template: |
+    {machine_type} makinesinin {measurement_point} bölgesinde {fault_name} tespiti yapılmıştır.
+    ISO Şiddet Değerlendirmesi: Bölge {iso_zone} ({iso_meaning}).
+    Titreşim Metrikleri: RMS {rms} mm/s, Peak {peak}, Crest Factor {crest_factor}, Kurtosis {kurtosis}.
+
+    Bu hatayı teknik olarak detaylıca açıkla, olası kök nedenleri sırala ve bu durum için yapılması gereken acil müdahale ile önleyici bakım adımlarını detaylandır.
+
+  followup_guidelines: |
+    Sohbetin bu aşamasında kullanıcı ilk teşhis raporu üzerinden takip soruları sormaktadır.
+    Önceki teşhis bağlamını ve tespit edilen sinyal bulgularını göz önünde bulundurarak kullanıcının yeni sorusunu yanıtla.
