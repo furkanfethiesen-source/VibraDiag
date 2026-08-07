@@ -2,7 +2,7 @@
 from pydantic import BaseModel, Field
 from typing import Literal, Optional, Dict
 from dataclasses import dataclass
-        
+
 class _PeakItem(BaseModel):
     order: str
     relative_amplitude: str
