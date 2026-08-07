@@ -16,6 +16,7 @@ from loguru import logger
 from retrieval.docstore import DocStore
 from retrieval.embedder import Embedder
 from retrieval.reranker import Reranker
+from schemas.states import RetrievalState
 
 if TYPE_CHECKING:
     from retrieval.qdrant_vector_db import TextChildQdrantDB, VisualQdrantDB
@@ -175,19 +176,7 @@ class VisualRetriever:
         )
 
 
-class RetrievalState(TypedDict, total=False):
-    """LangGraph state schema for retrieval orchestration."""
 
-    query: str
-    text_top_k: int
-    visual_top_k: int
-    threshold: float
-    text_results: dict
-    visual_results: dict
-    max_text_score: float
-    visual_triggered: bool
-    text_passages: list
-    visual_evidence: list
 
 
 class RetrievalGraph:
