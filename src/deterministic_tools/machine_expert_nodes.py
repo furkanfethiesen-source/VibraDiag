@@ -26,50 +26,10 @@ from deterministic_tools.signal_processing import (
 )
 
 
-class SignalProcessingInternalState(TypedDict, total=False):
-    """Faz 6: bu, SignalProcessingSubGraph'in KENDI ic (local) state'i.
-    Faz 4'te 'MachineDiagnosisState' adiyla tanimlanmisti; roadmap'teki
-    resmi adiyla eslesmesi icin yeniden adlandirildi (asagida geriye-donuk
-    uyumluluk icin eski isim alias olarak birakildi)."""
-
-    machine_type: Literal["rotating", "reciprocating"]
-    loaded_signal: LoadedSignal
-    rpm: float
-
-    n_balls: int
-    ball_diameter: float
-    pitch_diameter: float
-    contact_angle_deg: float
-
-    primary_channel: str
-    kurtogram_band: tuple
-    kurtogram: list
-    kurtogram_reliable: bool
-    final_band: tuple
-    band_source: str
-    band_filter_used: int | None
-    envelope_diagnosis: dict            
-    fault_localization: dict            
-    direct_spectrum_diagnosis: dict     
-
-    n_cylinders: int
-    stroke_type: str
-
-    reciprocating_diagnosis: dict
-
-    machine_class: str
-    vibration_velocity_rms_mm_s: float
-    severity_table: dict
-    iso_severity_zone: str
-    iso_severity_meaning: str
-    iso_severity_range_mm_s: tuple
-    iso_severity_machine_description: str
+from schemas.states import SignalProcessingInternalState
 
 
-MachineDiagnosisState = SignalProcessingInternalState
-
-
-def machine_type_router(state: MachineDiagnosisState) -> str:
+def machine_type_router(state: SignalProcessingInternalState) -> str:
     """Conditional entry point: state['machine_type']'a gore dallanir.
     Gecersiz/eksik machine_type acik bir hata firlatir — sessizce
     varsayilan bir dala dusmek yanlis teshise yol acabilir."""
@@ -82,8 +42,7 @@ def machine_type_router(state: MachineDiagnosisState) -> str:
     return machine_type
 
 
-
-def kurtogram_node(state: MachineDiagnosisState) -> dict:
+def kurtogram_node(state: SignalProcessingInternalState) -> dict:
     """Birincil kanalda (DE varsa DE, yoksa ilk kanal) kurtogram calistirir
     ve guvenilirligini degerlendirir. Rotating dalinin HER ZAMAN ilk adimi;
     fallback'e girip girmeyecegine buradaki sonuc karar verir."""
@@ -102,11 +61,11 @@ def kurtogram_node(state: MachineDiagnosisState) -> dict:
     }
 
 
-def kurtogram_reliability_router(state: MachineDiagnosisState) -> str:
+def kurtogram_reliability_router(state: SignalProcessingInternalState) -> str:
     return "rotating_expert" if state["kurtogram_reliable"] else "fallback_band"
 
 
-def fallback_band_node(state: MachineDiagnosisState) -> dict:
+def fallback_band_node(state: SignalProcessingInternalState) -> dict:
     """Kurtogram guvenilmez bulundugunda, RPM'e gore table_p29_vision'dan
     ampirik bir zarf-filtresi bandi secer. Bu bant kurtogram bandinin
     YERINE gecer (rotating_expert_node override_band olarak kullanir)."""
@@ -118,7 +77,7 @@ def fallback_band_node(state: MachineDiagnosisState) -> dict:
     }
 
 
-def rotating_expert_node(state: MachineDiagnosisState) -> dict:
+def rotating_expert_node(state: SignalProcessingInternalState) -> dict:
     """Donel makineler icin iki analiz dalini birlestirir:
     1) Zarf spektrumu (rulman arizalari: BPFO/BPFI/BSF/FTF) - coklu kanal,
     kurtogram VEYA fallback bandiyla (state['final_band'] varsa o,
@@ -160,7 +119,7 @@ def rotating_expert_node(state: MachineDiagnosisState) -> dict:
     }
 
 
-def reciprocating_expert_node(state: MachineDiagnosisState) -> dict:
+def reciprocating_expert_node(state: SignalProcessingInternalState) -> dict:
     """Pistonlu makineler icin table_p47_0+p48 denklemlerini hesaplar ve
     birincil kanalin dogrudan spektrumuyla eslestirir."""
     loaded: LoadedSignal = state["loaded_signal"]
