@@ -39,9 +39,18 @@ Gereksinimler:
     (tiktoken opsiyonel: daha doğru token sayımı için)
 """
 
+import os
 import re
+import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+SRC_DIR = PROJECT_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
 import fitz
 from ingestion.section_utils import (
     _extract_section_headings,
@@ -289,14 +298,14 @@ parent_splitter = RecursiveCharacterTextSplitter(
     chunk_size=PARENT_TOKEN_TARGET,
     chunk_overlap=0,
     length_function=_count_tokens,
-    separators=["\n\n", "\n", ". ", " ", ""]
+    separators=["\n# ", "\n## ", "\n### ", "\n\n", "\n", ". ", " ", ""]
 )
 
 child_splitter = RecursiveCharacterTextSplitter(
     chunk_size=CHILD_TOKEN_TARGET,
     chunk_overlap=CHILD_TOKEN_OVERLAP,
     length_function=_count_tokens,
-    separators=["\n\n", "\n", ". ", " ", ""]
+    separators=["\n# ", "\n## ", "\n### ", "\n\n", "\n", ". ", " ", ""]
 )
 
 
@@ -366,7 +375,7 @@ def build_chunks(pdf_path: str,
 
 
 def run_text_extraction(pdf_path: str,
-                        output_path: str = "text_chunks.json",
+                        output_path: str = "data/processed/text_chunks.json",
                         masked_bboxes_by_page: Optional[dict[int, list[tuple]]] = None):
     """
     Text extraction pipeline'ını çalıştırır ve sonucu JSON'a yazar.
