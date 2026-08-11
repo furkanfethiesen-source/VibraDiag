@@ -81,16 +81,26 @@ class GroqClient:
             tokens,
         )
 
-        try:
-            resp = self._client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                temperature=temp,
-                max_tokens=tokens,
-            )
-            content = resp.choices[0].message.content or ""
-            return content
-        except Exception as err:
-            logger.error("Groq LLM generation error: %s", err, exc_info=True)
-            raise RuntimeError(f"LLM generation failed: {err}") from err
+        import time
+        from groq import RateLimitError
+
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                resp = self._client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    temperature=temp,
+                    max_tokens=tokens,
+                )
+                content = resp.choices[0].message.content or ""
+                return content
+            except RateLimitError as rle:
+                logger.warning(f"Groq RateLimit (429) uyarısı (Deneme {attempt + 1}/{max_retries}): 10sn bekleniyor...")
+                if attempt == max_retries - 1:
+                    raise RuntimeError(f"LLM generation failed after {max_retries} retries: {rle}") from rle
+                time.sleep(10)
+            except Exception as err:
+                logger.error("Groq LLM generation error: %s", err, exc_info=True)
+                raise RuntimeError(f"LLM generation failed: {err}") from err
 
