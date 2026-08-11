@@ -93,11 +93,13 @@ class RetrievalState(TypedDict, total=False):
     text_top_k: int
     visual_top_k: int
     threshold: float
+    deduplicate_parents: bool
     text_results: dict[str, Any]
     visual_results: dict[str, Any]
     max_text_score: float
     visual_triggered: bool
     text_passages: list[dict[str, Any]]
     visual_evidence: list[dict[str, Any]]
+
 
 
