@@ -1,0 +1,171 @@
+[
+  {
+    "_id": "q_005",
+    "question": "ISO 10816 standartları ve titreşim şiddet tabloları (Vibration Severity Charts) ne amaçla kullanılır?",
+    "ground_truth_answer": "Titreşim şiddet tabloları, ölçülen genlik değerlerinin (ör. RMS hız) makine büyüklüğüne ve montaj tipine göre kabul edilebilir veya tehlikeli sınırlar içinde olup olmadığını değerlendirmek için kullanılır.",
+    "expected_chunk_ids": [
+      "text_parent_15_child_0",
+      "text_parent_15_child_1"
+    ],
+    "fault_type": "standards",
+    "expected_child_chunk_ids": [
+      "text_parent_15_child_0",
+      "text_parent_15_child_1"
+    ],
+    "expected_parent_chunk_ids": [
+      "text_parent_15"
+    ],
+    "expected_visual_chunk_ids": []
+  },
+  {
+    "_id": "q_009",
+    "question": "FFT analizinde pencereleme (Windowing / Leakage Effect) etkisi neden oluşur ve cam pencere fonksiyonları ne işe yarar?",
+    "ground_truth_answer": "Pencereleme etkisi (leakage), zaman sinyalinin sonlu bir pencereye kesilmesi nedeniyle frekans enerjisinin komşu kanallara sızmasıdır. Hanning veya Hamming gibi pencereler sızıntıyı önler.",
+    "expected_chunk_ids": [
+      "text_parent_21_child_0",
+      "text_parent_21_child_1"
+    ],
+    "fault_type": "signal_processing",
+    "expected_child_chunk_ids": [
+      "text_parent_21_child_0",
+      "text_parent_21_child_1"
+    ],
+    "expected_parent_chunk_ids": [
+      "text_parent_21"
+    ],
+    "expected_visual_chunk_ids": []
+  },
+  {
+    "_id": "q_014",
+    "question": "Rotorda dengesizlik (Unbalance) arızası spektrumda ve fazda kendini nasıl gösterir?",
+    "ground_truth_answer": "Dengesizlik arızası radyal yönde baskın 1X RPM frekansında yüksek sinüzoidal genlik verir ve yatay ile dikey ölçümler arasında yaklaşık 90 derece faz farkı görülür.",
+    "expected_chunk_ids": [
+      "text_parent_28_child_0",
+      "text_parent_28_child_1",
+      "text_parent_28_child_2"
+    ],
+    "fault_type": "unbalance",
+    "expected_child_chunk_ids": [
+      "text_parent_28_child_0",
+      "text_parent_28_child_1",
+      "text_parent_28_child_2"
+    ],
+    "expected_parent_chunk_ids": [
+      "text_parent_28"
+    ],
+    "expected_visual_chunk_ids": [
+      "fig_p30_vision_0",
+      "fig_p59_vision_0"
+    ]
+  },
+  {
+    "_id": "q_016",
+    "question": "Açısal eksen kaçıklığı (Angular Misalignment) ve paralellik kaçıklığı (Parallel Misalignment) titreşim spektrumunu nasıl etkiler?",
+    "ground_truth_answer": "Açısal eksen kaçıklığı eksenel (axial) yönde baskın 1X ve 2X RPM genlikleri üretirken, paralellik kaçıklığı radyal yönde 2X RPM genliğini öne çıkarır ve 180 derece faz farkı gösterir.",
+    "expected_chunk_ids": [
+      "text_parent_31_child_0",
+      "text_parent_31_child_1",
+      "text_parent_31_child_2"
+    ],
+    "fault_type": "misalignment",
+    "expected_child_chunk_ids": [
+      "text_parent_31_child_0",
+      "text_parent_31_child_1",
+      "text_parent_31_child_2"
+    ],
+    "expected_parent_chunk_ids": [
+      "text_parent_31"
+    ],
+    "expected_visual_chunk_ids": [
+      "fig_p35_vision_0",
+      "fig_p35_vision_1",
+      "fig_p36_vision_7"
+    ]
+  },
+  {
+    "_id": "q_017",
+    "question": "Mekanik gevşeklik (Mechanical Looseness) arızası spektrumda hangi harmonikleri ve karakteristikleri oluşturur?",
+    "ground_truth_answer": "Mekanik gevşeklik spektrumda çok sayıda 1X, 2X, 3X gibi harmonikler ile 0.5X gibi alt-harmonikler (sub-harmonics) üretir ve zaman dalga formunda doğrusal olmayan (non-linear) kesik tepeler oluşturur.",
+    "expected_chunk_ids": [
+      "text_parent_32_child_0",
+      "text_parent_32_child_1"
+    ],
+    "fault_type": "looseness",
+    "expected_child_chunk_ids": [
+      "text_parent_32_child_0",
+      "text_parent_32_child_1"
+    ],
+    "expected_parent_chunk_ids": [
+      "text_parent_32"
+    ],
+    "expected_visual_chunk_ids": [
+      "fig_p37_vision_0",
+      "fig_p38_vision_0",
+      "fig_p38_vision_1",
+      "fig_p60_vision_0"
+    ]
+  },
+  {
+    "_id": "q_018",
+    "question": "Rezonans (Resonance) ve doğal frekans tespiti için Darbe Testi (Bump Test) nasıl uygulanır?",
+    "ground_truth_answer": "Darbe testinde makine dururken yapıya yumuşak bir çekiçle vurulur ve ivmeölçer ile sistemin doğal frekansındaki serbest sönümlü salınım yanıtı kaydedilir.",
+    "expected_chunk_ids": [
+      "text_parent_33_child_0",
+      "text_parent_33_child_1"
+    ],
+    "fault_type": "resonance",
+    "expected_child_chunk_ids": [
+      "text_parent_33_child_0",
+      "text_parent_33_child_1"
+    ],
+    "expected_parent_chunk_ids": [
+      "text_parent_33"
+    ],
+    "expected_visual_chunk_ids": []
+  },
+  {
+    "_id": "q_019",
+    "question": "Pompalarda kanat geçiş frekansı (Vane Pass Frequency - VPF) ve hidrodinamik kuvvetler spektrumu nasıl etkiler?",
+    "ground_truth_answer": "Vane pass frekansı (Kanat sayısı x RPM) hidrodinamik akış dengesizliklerinde veya kanat-volüt mesafesi uygunsuz olduğunda yüksek genlikli VPF ve harmoniklerini üretir.",
+    "expected_chunk_ids": [
+      "text_parent_36_child_0",
+      "text_parent_36_child_1"
+    ],
+    "fault_type": "flow_hydrodynamic",
+    "expected_child_chunk_ids": [
+      "text_parent_36_child_0",
+      "text_parent_36_child_1"
+    ],
+    "expected_parent_chunk_ids": [
+      "text_parent_36"
+    ],
+    "expected_visual_chunk_ids": [
+      "fig_p45_vision_0"
+    ]
+  },
+  {
+    "_id": "q_020",
+    "question": "Rulman arızalarının gelişme aşamalarında (Stage 1 - Stage 4) frekans spektrumu ve ultrasonic / envelope sinyalleri nasıl değişir?",
+    "ground_truth_answer": "Aşama 1-2 yüksek frekanslı ultrasonic/envelope aralığında (BPFO, BPFI vb.) sinyaller verirken, Aşama 3-4 arızalarında spektruma temel harmonikler ve 1X yan bantlar eklenir, sonunda taban gürültüsü yükselir.",
+    "expected_chunk_ids": [
+      "text_parent_39_child_0",
+      "text_parent_39_child_1",
+      "text_parent_39_child_2"
+    ],
+    "fault_type": "bearing_fault",
+    "expected_child_chunk_ids": [
+      "text_parent_39_child_0",
+      "text_parent_39_child_1",
+      "text_parent_39_child_2"
+    ],
+    "expected_parent_chunk_ids": [
+      "text_parent_39"
+    ],
+    "expected_visual_chunk_ids": [
+      "fig_p51_vision_0",
+      "fig_p52_vision_0",
+      "fig_p52_vision_1",
+      "fig_p53_vision_0"
+    ]
+  }
+]
