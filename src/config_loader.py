@@ -12,6 +12,7 @@ class AppConfig(BaseModel):
     streamlit: Dict[str, Any]
     logging: Dict[str, Any]
     vision_llm: Dict[str, Any]
+    paths: Dict[str, Any] = {}
 
 class RetrievalConfig(BaseModel):
     parent_child_retrieval: Dict[str, Any] = {}
@@ -19,6 +20,8 @@ class RetrievalConfig(BaseModel):
     chromadb: Dict[str, Any] = {}
     parser: Dict[str, Any] = {}
     visual_retrieval: Dict[str, Any] = {}
+    qdrant: Dict[str, Any] = {}
+    docstore: Dict[str, Any] = {}
 
 class PromptsConfig(BaseModel):
     diagnosis_prompt: Dict[str, Any] = {}
