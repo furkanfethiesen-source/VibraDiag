@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import uuid
+
 from loguru import logger
 from qdrant_client import QdrantClient, models
 from qdrant_client.models import (
@@ -15,8 +17,6 @@ from qdrant_client.models import (
     Fusion,
     FusionQuery,
     MatchValue,
-    NamedSparseVector,
-    NamedVector,
     PointStruct,
     Prefetch,
     ScoredPoint,
@@ -29,6 +29,15 @@ from retrieval.sparse_encoder import SparseEncoder
 from retrieval.vector_db import BaseVectorDB
 
 
+def _to_uuid(doc_id: str) -> str:
+    """String ID'yi Qdrant uyumlu deterministik UUIDv5 formatına çevirir."""
+    try:
+        uuid.UUID(doc_id)
+        return doc_id
+    except ValueError:
+        return str(uuid.uuid5(uuid.NAMESPACE_DNS, doc_id))
+
+
 class _QdrantVectorDB(BaseVectorDB):
     """
     Qdrant tabanlı ortak implementasyon.
@@ -38,15 +47,30 @@ class _QdrantVectorDB(BaseVectorDB):
         self,
         collection_name: str,
         vector_size: int = 1024,
-        persist_path: str = "./qdrant_data",
+        persist_path: str | None = None,
         sparse_encoder: SparseEncoder | None = None,
+        client: QdrantClient | None = None,
     ):
         """
         QdrantVectorDB'yi ilklendirir.
         """
+        if persist_path is None:
+            try:
+                from config_loader import load_appcfg, load_retcfg
+
+                ret_cfg = load_retcfg()
+                app_cfg = load_appcfg()
+                persist_path = (
+                    getattr(ret_cfg, "qdrant", {}).get("persist_path")
+                    or getattr(app_cfg, "paths", {}).get("qdrant_persist_path")
+                    or "./qdrant_data"
+                )
+            except Exception:
+                persist_path = "./qdrant_data"
+
         self.collection_name = collection_name
         self.sparse_encoder = sparse_encoder
-        self.client = QdrantClient(path=persist_path)
+        self.client = client if client is not None else QdrantClient(path=persist_path)
 
         if not self.client.collection_exists(collection_name):
             logger.info(f"Koleksiyon oluşturuluyor: {collection_name}")
@@ -63,7 +87,6 @@ class _QdrantVectorDB(BaseVectorDB):
                 sparse_vectors_config=sparse_vectors_config,
             )
 
-            # Payload indeksleri
             self.client.create_payload_index(
                 collection_name=collection_name,
                 field_name="section_path",
@@ -103,6 +126,7 @@ class _QdrantVectorDB(BaseVectorDB):
         for i, doc_id in enumerate(ids):
             payload = dict(metadatas[i]) if metadatas else {}
             payload["_document"] = documents[i]
+            payload["_original_id"] = doc_id
 
             vector_dict = {"": embeddings[i]}
             if sparse_embeddings is not None:
@@ -110,7 +134,7 @@ class _QdrantVectorDB(BaseVectorDB):
 
             points.append(
                 PointStruct(
-                    id=doc_id,
+                    id=_to_uuid(doc_id),
                     vector=vector_dict,
                     payload=payload,
                 )
@@ -127,8 +151,9 @@ class _QdrantVectorDB(BaseVectorDB):
         n_results: int = 5,
         where: dict[str, Any] | None = None,
         sparse_query_embedding: SparseVector | None = None,
+        weights: tuple[float, float] | None = None,
     ) -> dict[str, Any]:
-        """Vektör benzerliğine göre sorgu yapar. Hybrid arama destekler."""
+        """Vektör benzerliğine göre sorgu yapar. Hybrid arama ve dinamik ağırlıklandırma destekler."""
         query_filter = None
         if where:
             conditions = []
@@ -137,17 +162,21 @@ class _QdrantVectorDB(BaseVectorDB):
             query_filter = Filter(must=conditions)
 
         if self.sparse_encoder is not None and sparse_query_embedding is not None:
+            dense_w, sparse_w = weights if weights is not None else (0.5, 0.5)
+            dense_limit = int(n_results * (2.5 if dense_w >= sparse_w else 1.5))
+            sparse_limit = int(n_results * (2.5 if sparse_w >= dense_w else 1.5))
+
             prefetch = [
                 Prefetch(
                     query=query_embedding,
                     using="",
-                    limit=n_results * 2,
+                    limit=dense_limit,
                     filter=query_filter,
                 ),
                 Prefetch(
                     query=sparse_query_embedding,
                     using="sparse",
-                    limit=n_results * 2,
+                    limit=sparse_limit,
                     filter=query_filter,
                 ),
             ]
@@ -175,12 +204,12 @@ class _QdrantVectorDB(BaseVectorDB):
         distances = []
 
         for point in points:
-            # qdrant id can be int or string, format as str for chromadb compatibility
-            ids.append(str(point.id))
             payload = point.payload or {}
+            real_id = payload.get("_original_id") or str(point.id)
+            ids.append(real_id)
             documents.append(payload.get("_document", ""))
             
-            meta = {k: v for k, v in payload.items() if k != "_document"}
+            meta = {k: v for k, v in payload.items() if k not in ("_document", "_original_id")}
             metadatas.append(meta)
             
             distances.append(point.score)
@@ -208,10 +237,11 @@ class _QdrantVectorDB(BaseVectorDB):
         metadatas = []
 
         for point in points:
-            ids.append(str(point.id))
             payload = point.payload or {}
+            real_id = payload.get("_original_id") or str(point.id)
+            ids.append(real_id)
             documents.append(payload.get("_document", ""))
-            meta = {k: v for k, v in payload.items() if k != "_document"}
+            meta = {k: v for k, v in payload.items() if k not in ("_document", "_original_id")}
             metadatas.append(meta)
 
         return {
@@ -237,14 +267,16 @@ class TextChildQdrantDB(_QdrantVectorDB):
         self,
         collection_name: str = "vibra_text_child",
         vector_size: int = 1024,
-        persist_path: str = "./qdrant_data",
+        persist_path: str | None = None,
         sparse_encoder: SparseEncoder | None = None,
+        client: QdrantClient | None = None,
     ):
         super().__init__(
             collection_name=collection_name,
             vector_size=vector_size,
             persist_path=persist_path,
             sparse_encoder=sparse_encoder,
+            client=client,
         )
 
 
@@ -258,11 +290,13 @@ class VisualQdrantDB(_QdrantVectorDB):
         self,
         collection_name: str = "vibra_visual",
         vector_size: int = 1024,
-        persist_path: str = "./qdrant_data",
+        persist_path: str | None = None,
+        client: QdrantClient | None = None,
     ):
         super().__init__(
             collection_name=collection_name,
             vector_size=vector_size,
             persist_path=persist_path,
             sparse_encoder=None,
+            client=client,
         )

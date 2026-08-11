@@ -8,6 +8,8 @@ RetrievalGraph — LangGraph node olarak koşullu yönlendirme + tekilleştirme 
 
 from __future__ import annotations
 
+import asyncio
+import re
 from typing import TYPE_CHECKING, Any, TypedDict
 
 from langgraph.graph import END, START, StateGraph
@@ -29,6 +31,11 @@ class TextRetriever:
     cross-encoder Reranker ile yeniden skorlar, parent chunk'ları çözümler.
     """
 
+    TECHNICAL_PATTERN = re.compile(
+        r"\b(?:ISO|VDI|IRD|DIN)\s*\d+.*\b|\b(?:BPFO|BPFI|BSF|FTF|VPF|RMS|FFT|HFD)\b|\b\d+(?:\.\d+)?X\b|\b[NTf]\b",
+        re.IGNORECASE,
+    )
+
     def __init__(
         self,
         embedder: Embedder,
@@ -43,6 +50,14 @@ class TextRetriever:
         self.reranker = reranker
         self.sparse_encoder = sparse_encoder
 
+    @classmethod
+    def detect_query_weights(cls, query: str) -> tuple[float, float]:
+        """Sorgu içeriğine göre (dense_w, sparse_w) ağırlıklarını dinamik belirler."""
+        if cls.TECHNICAL_PATTERN.search(query):
+            logger.debug(f"Dinamik Hibrit Ağırlık: Teknik sembol/kod tespit edildi (Sparse öne çıkarıldı) -> '{query}'")
+            return (0.20, 0.80)
+        return (0.40, 0.60)
+
     def search(
         self,
         query: str,
@@ -53,8 +68,7 @@ class TextRetriever:
         Qdrant native hybrid search ile arama yapar.
 
         Sparse encoder mevcutsa hem dense hem sparse vektörlerle hibrit arama yapılır
-        ve sonuçlar Qdrant'ın native RRF fusion'ı ile birleştirilir.
-        Sparse encoder yoksa sadece dense arama yapılır.
+        ve sonuçlar Qdrant'ın native RRF fusion'ı ile dinamik ağırlıklandırılarak birleştirilir.
         """
         query_embedding = self.embedder.embed_query(query)
 
@@ -62,29 +76,37 @@ class TextRetriever:
         if self.sparse_encoder is not None:
             sparse_query = self.sparse_encoder.encode_query(query)
 
+        weights = self.detect_query_weights(query)
+
         return self.vector_db.query(
             query_embedding=query_embedding,
             n_results=n_results,
             where=where,
             sparse_query_embedding=sparse_query,
+            weights=weights,
         )
 
     def search_with_rerank(
         self,
         query: str,
         rerank_top_k: int = 25,
-        final_top_k: int = 5,
+        final_top_k: int = 2,
         where: dict[str, Any] | None = None,
+        score_threshold: float | None = 0.0,
+        deduplicate_parents: bool = True,
     ) -> dict[str, Any]:
         """
         Hybrid search → Reranker → Parent chunk çözümleme.
 
         Dönen dict'te ``max_score`` anahtarı ek olarak bulunur (threshold
-        kontrolü için). Skorlar sigmoid ile [0, 1] aralığındadır.
+        kontrolü için).
         """
         candidates = self.search(query, n_results=rerank_top_k, where=where)
+        candidate_ids = candidates.get("ids", [[]])[0]
 
-        reranked = self.reranker.rerank(query, candidates, top_k=final_top_k)
+        reranked = self.reranker.rerank(
+            query, candidates, top_k=final_top_k, score_threshold=score_threshold, deduplicate_parents=deduplicate_parents
+        )
 
         distances = reranked.get("distances", [[]])[0]
         max_score = max(distances) if distances else 0.0
@@ -96,6 +118,7 @@ class TextRetriever:
                 "metadatas": [[]],
                 "distances": [[]],
                 "max_score": 0.0,
+                "candidate_ids": candidate_ids,
             }
             return result
 
@@ -107,7 +130,51 @@ class TextRetriever:
 
         parent_texts = self.docstore.get_many(list(parent_ids)) if parent_ids else {}
         merged = self._merge(reranked, parent_texts)
+
         merged["max_score"] = max_score
+        merged["candidate_ids"] = candidate_ids
+        return merged
+
+    async def asearch_with_rerank(
+        self,
+        query: str,
+        rerank_top_k: int = 25,
+        final_top_k: int = 2,
+        where: dict[str, Any] | None = None,
+        score_threshold: float | None = 0.0,
+        deduplicate_parents: bool = True,
+    ) -> dict[str, Any]:
+        """`search_with_rerank` metodunun asenkron versiyonu — reranker asenkron çalışır."""
+        candidates = self.search(query, n_results=rerank_top_k, where=where)
+        candidate_ids = candidates.get("ids", [[]])[0]
+        reranked = await self.reranker.arerank(
+            query, candidates, top_k=final_top_k, score_threshold=score_threshold, deduplicate_parents=deduplicate_parents
+        )
+
+        distances = reranked.get("distances", [[]])[0]
+        max_score = max(distances) if distances else 0.0
+
+        if not reranked.get("metadatas") or not reranked["metadatas"][0]:
+            return {
+                "ids": [[]],
+                "documents": [[]],
+                "metadatas": [[]],
+                "distances": [[]],
+                "max_score": 0.0,
+                "candidate_ids": candidate_ids,
+            }
+
+        parent_ids = {
+            m.get("parent_id") or m.get("parent_doc_id")
+            for m in reranked["metadatas"][0]
+            if m and (m.get("parent_id") or m.get("parent_doc_id"))
+        }
+
+        parent_texts = self.docstore.get_many(list(parent_ids)) if parent_ids else {}
+        merged = self._merge(reranked, parent_texts)
+
+        merged["max_score"] = max_score
+        merged["candidate_ids"] = candidate_ids
         return merged
 
     def _merge(
@@ -140,11 +207,7 @@ class TextRetriever:
             )
             parent_doc = parent_texts.get(parent_id) if parent_id else None
 
-            merged_doc = (
-                f"[PARENT]\n{parent_doc}\n\n[CHILD]\n{child_doc}"
-                if parent_doc
-                else child_doc
-            )
+            merged_doc = parent_doc if parent_doc else child_doc
 
             merged["ids"][0].append(child_id)
             merged["documents"][0].append(merged_doc)
@@ -152,6 +215,7 @@ class TextRetriever:
             merged["distances"][0].append(child_distance)
 
         return merged
+
 
 class VisualRetriever:
     """
@@ -175,8 +239,14 @@ class VisualRetriever:
             query_embedding=query_embedding, n_results=n_results, where=where
         )
 
-
-
+    async def asearch(
+        self,
+        query: str,
+        n_results: int = 3,
+        where: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Dense vector search asenkron sarmalayıcısı."""
+        return await asyncio.to_thread(self.search, query, n_results, where)
 
 
 class RetrievalGraph:
@@ -193,19 +263,18 @@ class RetrievalGraph:
     Prompt assembly ayrı bir katmanda gerçekleştirilmelidir.
     """
 
-    JACCARD_THRESHOLD = 0.7
+    JACCARD_THRESHOLD = 0.4
 
     def __init__(
         self,
         text_retriever: TextRetriever,
         visual_retriever: VisualRetriever,
-        threshold: float = 0.35,
+        threshold: float = 0.0,
     ):
         self.text_retriever = text_retriever
         self.visual_retriever = visual_retriever
         self.threshold = threshold
         self.graph = self._build_graph()
-
 
     def _build_graph(self) -> Any:
         """Retrieval LangGraph'ı oluşturur ve derler."""
@@ -229,12 +298,12 @@ class RetrievalGraph:
 
         return workflow.compile()
 
-
-    def _text_retrieve_node(self, state: RetrievalState) -> dict:
+    async def _text_retrieve_node(self, state: RetrievalState) -> dict:
         """Text retrieval node: hybrid search → reranker → parent resolution."""
-        results = self.text_retriever.search_with_rerank(
+        results = await self.text_retriever.asearch_with_rerank(
             query=state["query"],
-            final_top_k=state.get("text_top_k", 5),
+            final_top_k=state.get("text_top_k", 2),
+            deduplicate_parents=state.get("deduplicate_parents", True),
         )
         max_score = results.pop("max_score", 0.0)
         n_results = len(results.get("ids", [[]])[0])
@@ -260,9 +329,9 @@ class RetrievalGraph:
         )
         return "deduplicate_and_label"
 
-    def _visual_retrieve_node(self, state: RetrievalState) -> dict:
+    async def _visual_retrieve_node(self, state: RetrievalState) -> dict:
         """Visual retrieval node: dense vector search."""
-        results = self.visual_retriever.search(
+        results = await self.visual_retriever.asearch(
             query=state["query"],
             n_results=state.get("visual_top_k", 3),
         )
@@ -300,10 +369,9 @@ class RetrievalGraph:
             "visual_triggered": state.get("visual_triggered", False),
         }
 
-
     @staticmethod
     def _extract_passages(results: dict[str, Any]) -> list[dict[str, Any]]:
-        """ChromaDB-style dict'ten passage listesi çıkarır."""
+        """Retrieval results dict'ten passage listesi çıkarır."""
         passages: list[dict[str, Any]] = []
         ids = results.get("ids", [[]])[0]
         documents = results.get("documents", [[]])[0]
@@ -376,12 +444,11 @@ class RetrievalGraph:
             section_path = meta.get("section_path", "")
 
             location_collision = loc_key in text_location_keys and loc_key != ("", "")
-            fault_collision = fault in text_fault_keys and fault != ""
 
-            if location_collision or fault_collision:
+            if location_collision:
                 logger.debug(
                     f"Tekilleştirme: visual '{evidence.get('id')}' çıkarıldı "
-                    f"(loc={location_collision}, fault={fault_collision})"
+                    f"loc={location_collision}"
                 )
                 continue
 
@@ -411,38 +478,23 @@ class RetrievalGraph:
 
         return filtered
 
-
-    def invoke(
+    async def ainvoke(
         self,
         query: str,
-        text_top_k: int = 5,
+        text_top_k: int = 2,
         visual_top_k: int = 3,
         threshold: float | None = None,
+        deduplicate_parents: bool = True,
     ) -> RetrievalState:
         """
-        Retrieval pipeline'ını çalıştırır.
-
-        Parameters
-        ----------
-        query : str
-            Kullanıcı sorgusu.
-        text_top_k : int
-            TextRetriever'dan döndürülecek nihai sonuç sayısı.
-        visual_top_k : int
-            VisualRetriever'dan döndürülecek sonuç sayısı.
-        threshold : float | None
-            Visual fallback eşik değeri. None ise constructor'daki değer kullanılır.
-
-        Returns
-        -------
-        RetrievalState
-            ``text_passages``, ``visual_evidence``, ``visual_triggered`` anahtarlarını içerir.
+        Retrieval pipeline'ını asenkron olarak çalıştırır.
         """
         initial_state: RetrievalState = {
             "query": query,
             "text_top_k": text_top_k,
             "visual_top_k": visual_top_k,
             "threshold": threshold if threshold is not None else self.threshold,
+            "deduplicate_parents": deduplicate_parents,
             "text_results": {},
             "visual_results": {},
             "max_text_score": 0.0,
@@ -450,4 +502,30 @@ class RetrievalGraph:
             "text_passages": [],
             "visual_evidence": [],
         }
-        return self.graph.invoke(initial_state)
+        return await self.graph.ainvoke(initial_state)
+
+    def invoke(
+        self,
+        query: str,
+        text_top_k: int = 2,
+        visual_top_k: int = 3,
+        threshold: float | None = None,
+        deduplicate_parents: bool = True,
+    ) -> RetrievalState:
+        """
+        Retrieval pipeline'ını senkron olarak çalıştırır (ainvoke sarmalayıcısı).
+        """
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                return pool.submit(
+                    asyncio.run, self.ainvoke(query, text_top_k, visual_top_k, threshold, deduplicate_parents)
+                ).result()
+        else:
+            return asyncio.run(self.ainvoke(query, text_top_k, visual_top_k, threshold, deduplicate_parents))
+

@@ -9,11 +9,7 @@ from .retriever import (
     VisualRetriever,
 )
 from .sparse_encoder import SparseEncoder
-from .vector_db import (
-    BaseVectorDB,
-    TextChildVectorDB,
-    VisualVectorDB,
-)
+from .vector_db import BaseVectorDB
 from .qdrant_vector_db import (
     TextChildQdrantDB,
     VisualQdrantDB,
@@ -27,9 +23,7 @@ __all__ = [
     "RetrievalGraph",
     "SparseEncoder",
     "TextChildQdrantDB",
-    "TextChildVectorDB",
     "TextRetriever",
     "VisualQdrantDB",
     "VisualRetriever",
-    "VisualVectorDB",
 ]

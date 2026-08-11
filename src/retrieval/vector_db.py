@@ -9,9 +9,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, cast
 
-import chromadb
-from chromadb.api import ClientAPI
-
 
 class BaseVectorDB(ABC):
     """Tüm VectorDB implementasyonlarının uyması gereken sözleşme."""
@@ -33,7 +30,7 @@ class BaseVectorDB(ABC):
         n_results: int = 5,
         where: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Vektör benzerliğine göre sorgu yapar. ChromaDB-style dict döner."""
+        """Vektör benzerliğine göre sorgu yapar. Standardize retrieval dict döner."""
 
     @abstractmethod
     def count(self) -> int:

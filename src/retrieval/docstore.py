@@ -8,7 +8,21 @@ class DocStore:
     basit, SQLite tabanlı, disk'e persist eden key-value store.
     """
 
-    def __init__(self, persist_path: str = "./docstore.db"):
+    def __init__(self, persist_path: str | None = None):
+        if persist_path is None:
+            try:
+                from config_loader import load_appcfg, load_retcfg
+
+                ret_cfg = load_retcfg()
+                app_cfg = load_appcfg()
+                persist_path = (
+                    getattr(ret_cfg, "docstore", {}).get("persist_path")
+                    or getattr(app_cfg, "paths", {}).get("docstore_path")
+                    or "./docstore.db"
+                )
+            except Exception:
+                persist_path = "./docstore.db"
+
         self.persist_path = persist_path
         dirname = os.path.dirname(self.persist_path)
         if dirname:
