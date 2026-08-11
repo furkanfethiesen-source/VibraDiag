@@ -14,7 +14,7 @@ llm:
 
 embeddings:
   provider: "HuggingFaceEmbeddings"
-  model: "BAAI/bge-large-en-v1.5"
+  model: "BAAI/bge-m3"
   device: "mps"
   batch_size: 32
   normalize_embeddings: true
@@ -36,4 +36,13 @@ vision_llm:
   model: "gemini-3.5-flash"
   timeout: 60
   max_retries: 4
+
+paths:
+  qdrant_persist_path: "./qdrant_data"
+  docstore_path: "./docstore.db"
+  gold_dataset_path: "./data/evaluation/retrieval_benchmark_dev8.json"
+  eval_output_dir: "./data/eval_reports"
+  text_chunks_json: "./data/processed/text_chunks.json"
+  visual_chunks_json: "./data/processed/visual_chunks.json"
+  raw_pdf_path: "./data/raw/VibrationAnalysisandDiagnosticGuide.pdf"
 

@@ -6,8 +6,11 @@ parent_child_retrieval:
 
 hybrid_search:
   reranker:
-    model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    model: "BAAI/bge-reranker-large"
     batch_size: 32
+    top_k: 3
+    score_threshold: 0.35
+    visual_fallback_threshold: 0.35
 
 qdrant:
   persist_path: "./qdrant_data"

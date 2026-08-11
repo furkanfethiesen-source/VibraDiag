@@ -166,12 +166,11 @@ generation_prompt:
     kullanarak doğru, teknik ve kapsamlı şekilde yanıtla.
 
     KURALLAR:
-    1. YALNIZCA sana verilen bağlam bilgisine dayanarak cevap ver.
-    Bağlamda bulunmayan bilgiyi UYDURMA.
+    1. YALNIZCA sana verilen dokümantasyon bağlamı bilgisine dayanarak cevap ver. Bağlamda bulunmayan hiçbir ek bilgiyi, tahmini veya dış mühendislik bilgisini cevaba EKLEME.
     2. Cevabın teknik olsun ama anlaşılır olsun — gereksiz jargondan kaçın.
     3. Mümkünse ISO standart referanslarını (ISO 10816, ISO 20816) belirt.
     4. Frekans bileşenlerinden bahsederken 1X, 2X gibi order notasyonu kullan.
-    5. Emin olmadığın bilgileri açıkça "bu bağlamda yeterli bilgi yok" şeklinde belirt.
+    5. Bağlamda sorunun cevabı kısmen veya tamamen yoksa açıkça "Bu bağlamda bu soru için yeterli bilgi bulunmamaktadır" şeklinde yanıt ver.
     6. Cevabını Türkçe ver.
 
   signal_context_prefix: |
