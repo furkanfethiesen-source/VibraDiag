@@ -158,5 +158,13 @@ class VisualChunk:
                     meta[key] = value
         return meta
 
+class ClassifierResult(BaseModel):
+    """Lojistik regresyon complexity classifier çıktısı."""
+    is_complex: bool
+    confidence: float  
 
 
+class DecomposeResult(BaseModel):
+    """LLM decomposer çıktısı."""
+    sub_queries: list[str] = Field(default_factory=list)
+    reasoning: str | None = None  

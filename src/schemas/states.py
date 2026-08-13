@@ -101,5 +101,11 @@ class RetrievalState(TypedDict, total=False):
     text_passages: list[dict[str, Any]]
     visual_evidence: list[dict[str, Any]]
 
+    is_complex: bool
+    classifier_confidence: float
+    sub_queries: list[str]
+    decomposer_reasoning: str | None
+    sub_query_passages: dict[str, list[dict[str, Any]]]
+
 
 
