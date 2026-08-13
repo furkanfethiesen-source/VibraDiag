@@ -19,6 +19,10 @@ from retrieval.docstore import DocStore
 from retrieval.embedder import Embedder
 from retrieval.reranker import Reranker
 from schemas.states import RetrievalState
+from query_decomposer.node_factories import make_lr_classifier_node, make_decomposer_node
+from query_decomposer.classifier import QueryComplexityClassifier
+from query_decomposer.llm_decomposer import LLMDecomposer
+from config_loader import load_appcfg
 
 if TYPE_CHECKING:
     from retrieval.qdrant_vector_db import TextChildQdrantDB, VisualQdrantDB
@@ -270,10 +274,14 @@ class RetrievalGraph:
         text_retriever: TextRetriever,
         visual_retriever: VisualRetriever,
         threshold: float = 0.0,
+        classifier: QueryComplexityClassifier | None = None,
+        decomposer: LLMDecomposer | None = None,
     ):
         self.text_retriever = text_retriever
         self.visual_retriever = visual_retriever
         self.threshold = threshold
+        self.classifier = classifier
+        self.decomposer = decomposer
         self.graph = self._build_graph()
 
     def _build_graph(self) -> Any:
@@ -284,7 +292,41 @@ class RetrievalGraph:
         workflow.add_node("visual_retrieve", self._visual_retrieve_node)
         workflow.add_node("deduplicate_and_label", self._deduplicate_and_label_node)
 
-        workflow.add_edge(START, "text_retrieve")
+        if self.classifier and self.decomposer:
+            lr_node = make_lr_classifier_node(self.classifier)
+            decomp_node = make_decomposer_node(self.decomposer)
+            workflow.add_node("lr_classifier", lr_node)
+            workflow.add_node("decomposer", decomp_node)
+            workflow.add_node("parallel_retrieve", self._parallel_retrieve_node)
+
+            workflow.add_edge(START, "lr_classifier")
+            workflow.add_conditional_edges(
+                "lr_classifier",
+                self._route_after_classifier,
+                {
+                    "decomposer_node": "decomposer",
+                    "text_retrieve": "text_retrieve",
+                },
+            )
+            workflow.add_conditional_edges(
+                "decomposer",
+                self._route_after_decomposer,
+                {
+                    "parallel_retrieve": "parallel_retrieve",
+                    "text_retrieve": "text_retrieve",
+                },
+            )
+            workflow.add_conditional_edges(
+                "parallel_retrieve",
+                self._should_fallback,
+                {
+                    "visual_retrieve": "visual_retrieve",
+                    "deduplicate_and_label": "deduplicate_and_label",
+                },
+            )
+        else:
+            workflow.add_edge(START, "text_retrieve")
+
         workflow.add_conditional_edges(
             "text_retrieve",
             self._should_fallback,
@@ -297,7 +339,62 @@ class RetrievalGraph:
         workflow.add_edge("deduplicate_and_label", END)
 
         return workflow.compile()
+    async def _parallel_retrieve_node(self, state: RetrievalState) -> dict:
+        """Alt sorgular için paralel arama yapar ve sonuçları birleştirir."""
+        sub_queries = state.get("sub_queries", [])
+        if not sub_queries:
+            return await self._text_retrieve_node(state)
 
+        tasks = []
+        for sq in sub_queries:
+            tasks.append(self.text_retriever.asearch_with_rerank(
+                query=sq,
+                final_top_k=state.get("text_top_k", 2),
+                deduplicate_parents=state.get("deduplicate_parents", True),
+            ))
+        
+        results_list = await asyncio.gather(*tasks)
+        
+        sub_query_passages = {}
+        flat_passages = []
+        seen_ids = set()
+        max_scores = []
+        
+        for sq, res in zip(sub_queries, results_list):
+            max_scores.append(res.get("max_score", 0.0))
+            passages = self._extract_passages(res)
+            sq_passages = []
+            
+            for p in passages:
+                pid = p.get("id")
+                if pid not in seen_ids:
+                    seen_ids.add(pid)
+                    sq_passages.append(p)
+                    flat_passages.append(p)
+            
+            sub_query_passages[sq] = sq_passages
+
+        overall_max = max(max_scores) if max_scores else 0.0
+
+        return {
+            "text_results": {},
+            "max_text_score": overall_max,
+            "text_passages": flat_passages,
+            "sub_query_passages": sub_query_passages,
+        }
+
+    def _route_after_classifier(self, state: RetrievalState) -> str:
+        """Classifier sonucuna göre decomposer'a veya normal text aramasına yönlendirir."""
+        if state.get("is_complex", False):
+            return "decomposer_node"
+        return "text_retrieve"
+
+    def _route_after_decomposer(self, state: RetrievalState) -> str:
+        """Decomposer sonucuna göre paralel veya normal aramaya yönlendirir."""
+        sub_queries = state.get("sub_queries", [])
+        if sub_queries and len(sub_queries) >= 2:
+            return "parallel_retrieve"
+        return "text_retrieve"
     async def _text_retrieve_node(self, state: RetrievalState) -> dict:
         """Text retrieval node: hybrid search → reranker → parent resolution."""
         results = await self.text_retriever.asearch_with_rerank(
