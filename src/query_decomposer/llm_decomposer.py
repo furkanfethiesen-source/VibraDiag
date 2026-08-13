@@ -32,7 +32,7 @@ class LLMDecomposer:
 
     def decompose(self, query: str) -> DecomposeResult:
         """Sorguyu LLM kullanarak alt sorgulara böler."""
-        system_prompt = self.system_prompt_template.format(max_sub_queries=self.max_sub_queries)
+        system_prompt = self.system_prompt_template.replace("{max_sub_queries}", str(self.max_sub_queries))
         
         messages = [
             {"role": "system", "content": system_prompt},
@@ -61,6 +61,23 @@ class LLMDecomposer:
                         sub_queries=[], 
                         reasoning=f"fallback: yetersiz alt soru. {reasoning}"
                     )
+                
+                if len(sub_queries) > self.max_sub_queries + 1:
+                    logger.warning(
+                        f"Aşırı alt soru üretildi ({len(sub_queries)} > {self.max_sub_queries + 1}). "
+                        "Simple retrieval'a fallback uygulanıyor."
+                    )
+                    return DecomposeResult(
+                        sub_queries=[],
+                        reasoning=f"fallback: aşırı alt soru üretimi ({len(sub_queries)}). {reasoning}"
+                    )
+
+                if len(sub_queries) > self.max_sub_queries:
+                    logger.warning(
+                        f"Alt soru sayısı ({len(sub_queries)}) sınırı aştı. "
+                        f"İlk {self.max_sub_queries} soru alınıyor."
+                    )
+                    sub_queries = sub_queries[:self.max_sub_queries]
                     
                 return DecomposeResult(sub_queries=sub_queries, reasoning=reasoning)
                 
