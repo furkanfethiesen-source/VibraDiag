@@ -9,6 +9,7 @@ RetrievalGraph — LangGraph node olarak koşullu yönlendirme + tekilleştirme 
 from __future__ import annotations
 
 import asyncio
+import math
 import re
 from typing import TYPE_CHECKING, Any, TypedDict
 
@@ -22,7 +23,7 @@ from schemas.states import RetrievalState
 from query_decomposer.node_factories import make_lr_classifier_node, make_decomposer_node
 from query_decomposer.classifier import QueryComplexityClassifier
 from query_decomposer.llm_decomposer import LLMDecomposer
-from config_loader import load_appcfg
+from config_loader import load_appcfg, load_retcfg
 
 if TYPE_CHECKING:
     from retrieval.qdrant_vector_db import TextChildQdrantDB, VisualQdrantDB
@@ -345,10 +346,23 @@ class RetrievalGraph:
         if not sub_queries:
             return await self._text_retrieve_node(state)
 
+        ret_cfg = load_retcfg()
+        reranker_cfg = ret_cfg.hybrid_search.get("reranker", {})
+        target_budget = state.get("target_candidate_budget") or reranker_cfg.get("target_candidate_budget", 35)
+        min_per_sq = state.get("min_candidates_per_subquery") or reranker_cfg.get("min_candidates_per_subquery", 8)
+
+        sub_query_count = len(sub_queries)
+        per_query_rerank_top_k = max(min_per_sq, math.ceil(target_budget / sub_query_count))
+        logger.info(
+            f"Parallel retrieve: {sub_query_count} alt sorgu için sorgu başı rerank_top_k={per_query_rerank_top_k} "
+            f"(Toplam bütçe: {target_budget})"
+        )
+
         tasks = []
         for sq in sub_queries:
             tasks.append(self.text_retriever.asearch_with_rerank(
                 query=sq,
+                rerank_top_k=per_query_rerank_top_k,
                 final_top_k=state.get("text_top_k", 2),
                 deduplicate_parents=state.get("deduplicate_parents", True),
             ))
