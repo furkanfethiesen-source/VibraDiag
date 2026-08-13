@@ -13,6 +13,7 @@ class AppConfig(BaseModel):
     logging: Dict[str, Any]
     vision_llm: Dict[str, Any]
     paths: Dict[str, Any] = {}
+    decomposer: Dict[str, Any] = {}
 
 class RetrievalConfig(BaseModel):
     parent_child_retrieval: Dict[str, Any] = {}
@@ -28,6 +29,7 @@ class PromptsConfig(BaseModel):
     explanation_prompt: Dict[str, Any] = {}
     parsing_prompts: Dict[str, Any] = {}
     generation_prompt: Dict[str, Any] = {}
+    decomposer_prompt: Dict[str, Any] = {}
 
 
 @lru_cache(maxsize=1)
