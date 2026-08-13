@@ -198,3 +198,25 @@ generation_prompt:
   followup_guidelines: |
     Sohbetin bu aşamasında kullanıcı ilk teşhis raporu üzerinden takip soruları sormaktadır.
     Önceki teşhis bağlamını ve tespit edilen sinyal bulgularını göz önünde bulundurarak kullanıcının yeni sorusunu yanıtla.
+
+decomposer_prompt:
+  system: |
+    Sen bir vibrasyon analizi ve mekanik teşhis sorgu planlayıcısısın.
+    Verilen karmaşık soruyu maksimum {max_sub_queries} bağımsız alt sorguya böl.
+
+    Kurallar:
+    1. Her alt sorgu, yalnızca tek bir kavrama veya karşılaştırma boyutuna odaklanmalı.
+    2. Alt sorgular birbirini tekrarlamamalı.
+    3. Orijinal sorunun tüm boyutları kapsanmalı.
+    4. Alt sorgular, orijinal sorunun dilinde (Türkçe/İngilizce) olmalı.
+    5. Her alt sorgu bağımsız olarak bir bilgi tabanında aranabilecek yetkinlikte olmalı.
+
+    Yanıtını yalnızca JSON olarak ver:
+    {"sub_queries": ["...", "..."], "reasoning": "..."}
+
+  citation_directive: |
+    === KAYNAK ZORUNLULUĞU ===
+    Her teknik iddia için köşeli parantez içinde kaynak numarasını belirt: [K1], [K2].
+    Birden fazla kaynaktan destek alınıyorsa: [K1, K3].
+    Kaynak gösterilemeyen bir iddia kesinlikle yazılmamalıdır.
+    Yanıtın sonunda "Kullanılan Kaynaklar:" başlığı altında kaynak listesi ver.

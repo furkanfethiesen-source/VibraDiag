@@ -44,5 +44,15 @@ paths:
   eval_output_dir: "./data/eval_reports"
   text_chunks_json: "./data/processed/text_chunks.json"
   visual_chunks_json: "./data/processed/visual_chunks.json"
-  raw_pdf_path: "./data/raw/VibrationAnalysisandDiagnosticGuide.pdf"
 
+
+decomposer:
+  provider: "groq"
+  model: "qwen/qwen3.6-27b"
+  temperature: 0.1
+  max_tokens: 512
+  max_sub_queries: 3
+  min_sub_queries: 2
+  confidence_threshold: 0.55
+  model_path: "src/query_decomposer/models/complexity_pipeline.pkl"
+  training_data_path: "data/decomposer_data/training.jsonl"
