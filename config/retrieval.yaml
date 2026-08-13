@@ -11,6 +11,8 @@ hybrid_search:
     top_k: 3
     score_threshold: 0.35
     visual_fallback_threshold: 0.35
+    target_candidate_budget: 35
+    min_candidates_per_subquery: 8
 
 qdrant:
   persist_path: "./qdrant_data"
