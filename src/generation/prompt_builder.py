@@ -190,6 +190,7 @@ def build_system_prompt(
     has_signal_context: bool = False,
     state: dict[str, Any] | None = None,
     is_followup: bool = False,
+    is_decomposed: bool = False,
 ) -> str:
     """
     Construct system prompt combining base prompt and optional signal context.
@@ -241,10 +242,17 @@ def build_system_prompt(
         if formatted_signal:
             prompt_parts.append(f"\n{signal_prefix.strip()}\n\n{formatted_signal}")
 
+    if is_decomposed:
+        prompt_parts.append(f"\n{build_synthesis_directive()}")
+
     return "\n\n".join(prompt_parts).strip()
 
 
-def build_user_message(query: str, context: str = "") -> str:
+def build_user_message(
+    query: str,
+    context: str = "",
+    sub_query_passages: dict[str, list[dict[str, Any]]] | None = None,
+) -> str:
     """
     Construct user message combining query and retrieved RAG context.
 
@@ -262,6 +270,14 @@ def build_user_message(query: str, context: str = "") -> str:
     """
     clean_query = query.strip()
     clean_context = context.strip()
+
+    if sub_query_passages:
+        decomposed_context, _ = build_decomposed_context(sub_query_passages)
+        return (
+            f"{decomposed_context}\n\n"
+            f"=== ORİJİNAL SORU ===\n"
+            f"{clean_query}"
+        )
 
     if not clean_context:
         return clean_query
@@ -303,4 +319,79 @@ def build_messages_payload(
                 messages.append({"role": str(turn["role"]), "content": str(turn["content"])})
     messages.append({"role": "user", "content": user_message})
     return messages
+
+
+def build_decomposed_context(
+    sub_query_passages: dict[str, list[dict[str, Any]]],
+) -> tuple[str, dict[str, str]]:
+    """
+    Sub-query bazlı gruplu context oluşturur, citation etiketleri yerleştirir.
+
+    Parameters
+    ----------
+    sub_query_passages : dict
+        {sub_query_text: [passage_dicts]} mapping'i.
+
+    Returns
+    -------
+    tuple[str, dict[str, str]]
+        (formatted_context, citation_map)
+        citation_map: {"K1": "source_description", ...}
+    """
+    lines = ["=== ARAŞTIRMA BAĞLAMI ==="]
+    citation_map: dict[str, str] = {}
+    citation_counter = 1
+
+    for sq_idx, (sub_query, passages) in enumerate(sub_query_passages.items(), 1):
+        lines.append(f"\n[Alt Sorgu {sq_idx}: \"{sub_query}\"]")
+
+        if not passages:
+            lines.append("  (Bu alt sorgu için sonuç bulunamadı)")
+            continue
+
+        for passage in passages:
+            cite_key = f"K{citation_counter}"
+            chunk_id = passage.get("id", "unknown")
+            metadata = passage.get("metadata", {})
+            page_number = metadata.get("page_number", "?")
+            section_path = metadata.get("section_path", "")
+            text = passage.get("text", "")
+
+            source_desc = f"{section_path}, s.{page_number}" if section_path else f"chunk:{chunk_id}, s.{page_number}"
+            citation_map[cite_key] = source_desc
+
+            lines.append(f"  [{cite_key}] {source_desc}:")
+            lines.append(f"    {text[:500]}{'...' if len(text) > 500 else ''}")
+
+            citation_counter += 1
+
+    return "\n".join(lines), citation_map
+
+
+def build_synthesis_directive(citation_map: dict[str, str] | None = None) -> str:
+    """
+    Generator system prompt'una eklenen citation zorunluluğu direktifi.
+
+    Parameters
+    ----------
+    citation_map : dict, optional
+        Mevcut citation haritası (logging/debug için).
+
+    Returns
+    -------
+    str
+        Citation directive metni.
+    """
+    prompts_cfg = load_prompts_cfg()
+    decomposer_prompt_cfg = getattr(prompts_cfg, "decomposer_prompt", {}) or {}
+
+    directive = decomposer_prompt_cfg.get(
+        "citation_directive",
+        "\n=== KAYNAK ZORUNLULUĞU ===\n"
+        "Her teknik iddia için köşeli parantez içinde kaynak numarasını belirt: [K1], [K2].\n"
+        "Birden fazla kaynaktan destek alınıyorsa: [K1, K3].\n"
+        "Kaynak gösterilemeyen bir iddia kesinlikle yazılmamalıdır.\n"
+        "Yanıtın sonunda 'Kullanılan Kaynaklar:' başlığı altında kaynak listesi ver.",
+    )
+    return directive.strip()
 

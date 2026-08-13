@@ -96,12 +96,20 @@ def generation_node(state: Any) -> dict[str, Any]:
             if chunks_text:
                 merged_context = "\n\n".join(chunks_text)
 
+    sub_query_passages = state_dict.get("sub_query_passages")
+    is_decomposed = bool(sub_query_passages)
+
     system_prompt = build_system_prompt(
         has_signal_context=has_signal_context,
         state=state_dict,
         is_followup=is_followup,
+        is_decomposed=is_decomposed,
     )
-    user_message = build_user_message(query=user_query, context=merged_context)
+    user_message = build_user_message(
+        query=user_query,
+        context=merged_context,
+        sub_query_passages=sub_query_passages,
+    )
     messages_payload = build_messages_payload(
         system_prompt=system_prompt,
         user_message=user_message,
