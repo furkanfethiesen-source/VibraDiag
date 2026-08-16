@@ -411,14 +411,15 @@ class RetrievalGraph:
         return "text_retrieve"
     async def _text_retrieve_node(self, state: RetrievalState) -> dict:
         """Text retrieval node: hybrid search → reranker → parent resolution."""
+        search_query = state.get("reformulated_query") or state["query"]
         results = await self.text_retriever.asearch_with_rerank(
-            query=state["query"],
+            query=search_query,
             final_top_k=state.get("text_top_k", 2),
             deduplicate_parents=state.get("deduplicate_parents", True),
         )
         max_score = results.pop("max_score", 0.0)
         n_results = len(results.get("ids", [[]])[0])
-        logger.info(f"TextRetriever: {n_results} sonuç, max_score={max_score:.3f}")
+        logger.info(f"TextRetriever: query='{search_query[:50]}...', {n_results} sonuç, max_score={max_score:.3f}")
         return {
             "text_results": results,
             "max_text_score": max_score,
@@ -442,11 +443,12 @@ class RetrievalGraph:
 
     async def _visual_retrieve_node(self, state: RetrievalState) -> dict:
         """Visual retrieval node: dense vector search."""
+        search_query = state.get("reformulated_query") or state["query"]
         results = await self.visual_retriever.asearch(
-            query=state["query"],
+            query=search_query,
             n_results=state.get("visual_top_k", 3),
         )
-        logger.info(f"VisualRetriever: {len(results.get('ids', [[]])[0])} sonuç")
+        logger.info(f"VisualRetriever: query='{search_query[:50]}...', {len(results.get('ids', [[]])[0])} sonuç")
         return {
             "visual_results": results,
             "visual_triggered": True,
@@ -461,15 +463,21 @@ class RetrievalGraph:
         - ``fault_type`` çakışması VEYA
         - Metadata eksikse (section_path unknown/boş), Jaccard metin benzerliği
         varsa, visual sonuç çıkarılır (text daha zengin bağlam içerir).
+        - Ayrıca state['excluded_chunk_ids'] içindeki chunk'lar filtrelenir.
         """
         text_results = state.get("text_results", {})
         visual_results = state.get("visual_results")
+        excluded_ids = set(state.get("excluded_chunk_ids") or [])
 
         text_passages = self._extract_passages(text_results)
+        if excluded_ids:
+            text_passages = [p for p in text_passages if p.get("id") not in excluded_ids]
 
         visual_evidence: list[dict[str, Any]] = []
         if visual_results:
             visual_evidence = self._extract_passages(visual_results)
+            if excluded_ids:
+                visual_evidence = [v for v in visual_evidence if v.get("id") not in excluded_ids]
 
         if text_passages and visual_evidence:
             visual_evidence = self._deduplicate(text_passages, visual_evidence)
@@ -479,6 +487,7 @@ class RetrievalGraph:
             "visual_evidence": visual_evidence,
             "visual_triggered": state.get("visual_triggered", False),
         }
+
 
     @staticmethod
     def _extract_passages(results: dict[str, Any]) -> list[dict[str, Any]]:
