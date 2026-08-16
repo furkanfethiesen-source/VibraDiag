@@ -1,0 +1,91 @@
+{
+  "fp_penalty_weight_used": 1.5,
+  "dsp_threshold_note": "DSP Consistency Checker deterministic bir pass/fail üretir, threshold kalibrasyonu kapsamı dışındadır (dsp_grid sabit [1.0]).",
+  "best_config": {
+    "thresholds": {
+      "faithfulness_threshold": 0.5,
+      "relevance_threshold": 0.55,
+      "dsp_consistency_threshold": 1.0
+    },
+    "accuracy": 1.0,
+    "f1_score": 1.0,
+    "f05_score": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "clean_false_positive_rate": 0.0,
+    "utility_score": 1.0
+  },
+  "top_5_configurations": [
+    {
+      "thresholds": {
+        "faithfulness_threshold": 0.5,
+        "relevance_threshold": 0.55,
+        "dsp_consistency_threshold": 1.0
+      },
+      "accuracy": 1.0,
+      "f1_score": 1.0,
+      "f05_score": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "clean_false_positive_rate": 0.0,
+      "utility_score": 1.0
+    },
+    {
+      "thresholds": {
+        "faithfulness_threshold": 0.5,
+        "relevance_threshold": 0.6,
+        "dsp_consistency_threshold": 1.0
+      },
+      "accuracy": 1.0,
+      "f1_score": 1.0,
+      "f05_score": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "clean_false_positive_rate": 0.0,
+      "utility_score": 1.0
+    },
+    {
+      "thresholds": {
+        "faithfulness_threshold": 0.5,
+        "relevance_threshold": 0.65,
+        "dsp_consistency_threshold": 1.0
+      },
+      "accuracy": 1.0,
+      "f1_score": 1.0,
+      "f05_score": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "clean_false_positive_rate": 0.0,
+      "utility_score": 1.0
+    },
+    {
+      "thresholds": {
+        "faithfulness_threshold": 0.5,
+        "relevance_threshold": 0.7,
+        "dsp_consistency_threshold": 1.0
+      },
+      "accuracy": 1.0,
+      "f1_score": 1.0,
+      "f05_score": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "clean_false_positive_rate": 0.0,
+      "utility_score": 1.0
+    },
+    {
+      "thresholds": {
+        "faithfulness_threshold": 0.5,
+        "relevance_threshold": 0.75,
+        "dsp_consistency_threshold": 1.0
+      },
+      "accuracy": 1.0,
+      "f1_score": 1.0,
+      "f05_score": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "clean_false_positive_rate": 0.0,
+      "utility_score": 1.0
+    }
+  ],
+  "total_combinations_tested": 56
+}

@@ -1,0 +1,517 @@
+{
+  "summary": {
+    "total_samples": 8,
+    "overall_accuracy": 1.0,
+    "clean_false_positive_rate": 0.0,
+    "fail_open_approved_count": 0,
+    "thresholds_used": {
+      "faithfulness_threshold": 0.7,
+      "relevance_threshold": 0.65,
+      "dsp_consistency_threshold": 1.0
+    },
+    "scenario_breakdown": {
+      "clean": {
+        "total": 3,
+        "correct": 3,
+        "false_positives": 0
+      },
+      "dsp_mismatch": {
+        "total": 1,
+        "correct": 1,
+        "missed": 0
+      },
+      "unfaithful": {
+        "total": 3,
+        "correct": 3,
+        "missed": 0
+      },
+      "sub_query_gap": {
+        "total": 1,
+        "correct": 1,
+        "missed": 0
+      }
+    },
+    "checker_metrics": {
+      "dsp_consistency": {
+        "TP": 1,
+        "FP": 0,
+        "FN": 0,
+        "TN": 7,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "faithfulness": {
+        "TP": 3,
+        "FP": 0,
+        "FN": 0,
+        "TN": 5,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "sub_query_relevance": {
+        "TP": 1,
+        "FP": 3,
+        "FN": 0,
+        "TN": 4,
+        "precision": 0.25,
+        "recall": 1.0,
+        "f1": 0.4
+      }
+    },
+    "tokens": {
+      "input": 10621,
+      "output": 1163,
+      "total": 11784
+    },
+    "estimated_cost_usd": 0.001147,
+    "avg_latency_ms": 2401.75
+  },
+  "details": [
+    {
+      "id": "q_005_dev_clean",
+      "scenario": "clean",
+      "expected": "approved",
+      "expected_failing_checkers": [],
+      "actual": "approved",
+      "is_flagged": false,
+      "flag_reason": null,
+      "checker_results": {
+        "dsp_consistency": {
+          "checker_name": "dsp_consistency",
+          "passed": true,
+          "score": 1.0,
+          "rationale": "Üretilen yanıt DSP state ve ground truth verileriyle tam tutarlıdır.",
+          "token_usage": {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+            "estimated_cost_usd": 0.0
+          },
+          "latency_ms": 0.08225440979003906,
+          "execution_error": false,
+          "error_message": null
+        },
+        "faithfulness": {
+          "checker_name": "faithfulness",
+          "passed": true,
+          "score": 1.0,
+          "rationale": "Cevap, bağlamda belirtilen 'titreşim şiddeti' ve 'operasyonel kriterler/sınırlar' kavramlarını temel almaktadır. RMS hız, makine büyüklüğü ve montaj tipi gibi ifadeler, endüstriyel titreşim analizi alanında bu tür standartların ayrılmaz bir parçası olduğu için 'makul alan bilgisi çıkarımı' kuralı kapsamında değerlendirilmiştir.",
+          "token_usage": {
+            "prompt_tokens": 924,
+            "completion_tokens": 108,
+            "total_tokens": 1032,
+            "estimated_cost_usd": 0.000102
+          },
+          "latency_ms": 1443.8259601593018,
+          "execution_error": false,
+          "error_message": null
+        },
+        "sub_query_relevance": {
+          "checker_name": "sub_query_relevance",
+          "passed": true,
+          "score": 0.85,
+          "rationale": "Cevap, ISO 10816 standartlarının ve titreşim şiddet tablolarının temel kullanım amacını (makine durum değerlendirmesi ve sınır değer belirleme) doğru bir şekilde açıklamaktadır. Ancak ISO 10816'nın genel bir standart serisi olduğu ve farklı makine sınıfları için kriterler sunduğu detayı biraz daha vurgulanabilirdi.",
+          "token_usage": {
+            "prompt_tokens": 576,
+            "completion_tokens": 100,
+            "total_tokens": 676,
+            "estimated_cost_usd": 7.3e-05
+          },
+          "latency_ms": 1090.724229812622,
+          "execution_error": false,
+          "error_message": null
+        }
+      },
+      "is_correct": true,
+      "latency_ms": 2622.95
+    },
+    {
+      "id": "q_009_dev_dsp_mismatch",
+      "scenario": "dsp_mismatch",
+      "expected": "retry_generation",
+      "expected_failing_checkers": [
+        "dsp_consistency"
+      ],
+      "actual": "retry_generation",
+      "is_flagged": false,
+      "flag_reason": null,
+      "checker_results": {
+        "dsp_consistency": {
+          "checker_name": "dsp_consistency",
+          "passed": false,
+          "score": 0.0,
+          "rationale": "DSP ground truth 'Dengesizlik (Unbalance)' arızası tespit etmişken üretilen metinde 'Hizasızlık (Misalignment)' iddia edilmiş veya Dengesizlik arızası reddedilmiştir.",
+          "token_usage": {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+            "estimated_cost_usd": 0.0
+          },
+          "latency_ms": 0.2911090850830078,
+          "execution_error": false,
+          "error_message": null
+        }
+      },
+      "is_correct": true,
+      "latency_ms": 2.11
+    },
+    {
+      "id": "q_014_dev_sub_query_gap",
+      "scenario": "sub_query_gap",
+      "expected": "retry_generation",
+      "expected_failing_checkers": [
+        "sub_query_relevance"
+      ],
+      "actual": "retry_retrieval",
+      "is_flagged": false,
+      "flag_reason": null,
+      "checker_results": {
+        "dsp_consistency": {
+          "checker_name": "dsp_consistency",
+          "passed": true,
+          "score": 1.0,
+          "rationale": "Üretilen yanıt DSP state ve ground truth verileriyle tam tutarlıdır.",
+          "token_usage": {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+            "estimated_cost_usd": 0.0
+          },
+          "latency_ms": 0.1800060272216797,
+          "execution_error": false,
+          "error_message": null
+        },
+        "faithfulness": {
+          "checker_name": "faithfulness",
+          "passed": true,
+          "score": 1.0,
+          "rationale": "Cevapta belirtilen 1X RPM frekans baskınlığı ve yatay-dikey ölçümler arasındaki 90 derecelik faz farkı, kaynak bağlamdaki (text_parent_28_child_2) statik dengesizlik tanımları ve test prosedürleri ile tam olarak örtüşmektedir.",
+          "token_usage": {
+            "prompt_tokens": 1106,
+            "completion_tokens": 89,
+            "total_tokens": 1195,
+            "estimated_cost_usd": 0.00011
+          },
+          "latency_ms": 1427.860975265503,
+          "execution_error": false,
+          "error_message": null
+        },
+        "sub_query_relevance": {
+          "checker_name": "sub_query_relevance",
+          "passed": false,
+          "score": 0.5,
+          "rationale": "Cevap, rotorda dengesizlik arızasının spektrumdaki karakteristiklerini doğru bir şekilde açıklamıştır ancak ikinci alt soru olan 'düzeltici aksiyon adımları' kısmını açıkça atlamış ve bu konuda bilgi vermemiştir.",
+          "token_usage": {
+            "prompt_tokens": 609,
+            "completion_tokens": 71,
+            "total_tokens": 680,
+            "estimated_cost_usd": 6.7e-05
+          },
+          "latency_ms": 877.6137828826904,
+          "execution_error": false,
+          "error_message": null
+        }
+      },
+      "is_correct": true,
+      "latency_ms": 2310.99
+    },
+    {
+      "id": "q_016_dev_clean_hard",
+      "scenario": "clean",
+      "expected": "approved",
+      "expected_failing_checkers": [],
+      "actual": "approved",
+      "is_flagged": false,
+      "flag_reason": null,
+      "checker_results": {
+        "dsp_consistency": {
+          "checker_name": "dsp_consistency",
+          "passed": true,
+          "score": 1.0,
+          "rationale": "Üretilen yanıt DSP state ve ground truth verileriyle tam tutarlıdır.",
+          "token_usage": {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+            "estimated_cost_usd": 0.0
+          },
+          "latency_ms": 0.18405914306640625,
+          "execution_error": false,
+          "error_message": null
+        },
+        "faithfulness": {
+          "checker_name": "faithfulness",
+          "passed": true,
+          "score": 1.0,
+          "rationale": "Üretilen cevap, kaynak bağlamda belirtilen açısal eksen kaçıklığının eksenel yöndeki 1x ve 2x RPM karakteristikleri ile paralellik kaçıklığının radyal yöndeki 2x RPM ve 180 derece faz farkı özelliklerini tam olarak yansıtmaktadır.",
+          "token_usage": {
+            "prompt_tokens": 1049,
+            "completion_tokens": 89,
+            "total_tokens": 1138,
+            "estimated_cost_usd": 0.000105
+          },
+          "latency_ms": 1365.9098148345947,
+          "execution_error": false,
+          "error_message": null
+        },
+        "sub_query_relevance": {
+          "checker_name": "sub_query_relevance",
+          "passed": true,
+          "score": 1.0,
+          "rationale": "Cevap, hem açısal hem de paralellik kaçıklığının titreşim spektrumundaki karakteristik etkilerini (frekans ve yön bazlı) doğru ve öz bir şekilde açıklamıştır.",
+          "token_usage": {
+            "prompt_tokens": 598,
+            "completion_tokens": 59,
+            "total_tokens": 657,
+            "estimated_cost_usd": 6.3e-05
+          },
+          "latency_ms": 1843.6717987060547,
+          "execution_error": false,
+          "error_message": null
+        }
+      },
+      "is_correct": true,
+      "latency_ms": 3213.96
+    },
+    {
+      "id": "q_017_dev_unfaithful_1",
+      "scenario": "unfaithful",
+      "expected": "retry_retrieval",
+      "expected_failing_checkers": [
+        "faithfulness"
+      ],
+      "actual": "retry_retrieval",
+      "is_flagged": false,
+      "flag_reason": null,
+      "checker_results": {
+        "dsp_consistency": {
+          "checker_name": "dsp_consistency",
+          "passed": true,
+          "score": 1.0,
+          "rationale": "Üretilen yanıt DSP state ve ground truth verileriyle tam tutarlıdır.",
+          "token_usage": {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+            "estimated_cost_usd": 0.0
+          },
+          "latency_ms": 0.0059604644775390625,
+          "execution_error": false,
+          "error_message": null
+        },
+        "faithfulness": {
+          "checker_name": "faithfulness",
+          "passed": false,
+          "score": 0.0,
+          "rationale": "Cevapta geçen 'plazma kaynaklı rezonans dalgalanması' ve 'kuantum filtreleme' ifadeleri, sağlanan kaynak bağlamda yer almadığı gibi, endüstriyel titreşim analizi disipliniyle de bağdaşmayan tamamen uydurma (halüsinasyon) kavramlardır.",
+          "token_usage": {
+            "prompt_tokens": 884,
+            "completion_tokens": 91,
+            "total_tokens": 975,
+            "estimated_cost_usd": 9.4e-05
+          },
+          "latency_ms": 2046.9863414764404,
+          "execution_error": false,
+          "error_message": null
+        },
+        "sub_query_relevance": {
+          "checker_name": "sub_query_relevance",
+          "passed": false,
+          "score": 0.0,
+          "rationale": "Üretilen cevap, mekanik gevşeklik arızasının spektrumdaki harmonik ve karakteristikleri ile ilgili hiçbir teknik bilgi içermemektedir. Cevap, konuyla tamamen alakasız ve anlamsız terimler içermektedir.",
+          "token_usage": {
+            "prompt_tokens": 565,
+            "completion_tokens": 71,
+            "total_tokens": 636,
+            "estimated_cost_usd": 6.4e-05
+          },
+          "latency_ms": 2075.460195541382,
+          "execution_error": false,
+          "error_message": null
+        }
+      },
+      "is_correct": true,
+      "latency_ms": 4127.0
+    },
+    {
+      "id": "q_018_dev_unfaithful_2",
+      "scenario": "unfaithful",
+      "expected": "retry_retrieval",
+      "expected_failing_checkers": [
+        "faithfulness"
+      ],
+      "actual": "retry_retrieval",
+      "is_flagged": false,
+      "flag_reason": null,
+      "checker_results": {
+        "dsp_consistency": {
+          "checker_name": "dsp_consistency",
+          "passed": true,
+          "score": 1.0,
+          "rationale": "Üretilen yanıt DSP state ve ground truth verileriyle tam tutarlıdır.",
+          "token_usage": {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+            "estimated_cost_usd": 0.0
+          },
+          "latency_ms": 0.0059604644775390625,
+          "execution_error": false,
+          "error_message": null
+        },
+        "faithfulness": {
+          "checker_name": "faithfulness",
+          "passed": false,
+          "score": 0.0,
+          "rationale": "Cevap, kaynak bağlamda yer almayan uydurma standartlar (ISO 99999 ve NASA-VIB) içermekte ve bağlamda hiç bahsedilmeyen rotor sıcaklığı gibi veriler üzerinden halüsinasyon içeren bir yargıda bulunmaktadır.",
+          "token_usage": {
+            "prompt_tokens": 880,
+            "completion_tokens": 79,
+            "total_tokens": 959,
+            "estimated_cost_usd": 9e-05
+          },
+          "latency_ms": 1226.067066192627,
+          "execution_error": false,
+          "error_message": null
+        },
+        "sub_query_relevance": {
+          "checker_name": "sub_query_relevance",
+          "passed": false,
+          "score": 0.0,
+          "rationale": "Üretilen cevap, kullanıcının sorduğu 'Darbe Testi'nin nasıl uygulanacağına dair hiçbir teknik bilgi içermemekte olup, konuyla tamamen alakasız ve anlamsız bir içerik sunmaktadır.",
+          "token_usage": {
+            "prompt_tokens": 560,
+            "completion_tokens": 65,
+            "total_tokens": 625,
+            "estimated_cost_usd": 6.2e-05
+          },
+          "latency_ms": 1218.087911605835,
+          "execution_error": false,
+          "error_message": null
+        }
+      },
+      "is_correct": true,
+      "latency_ms": 2449.26
+    },
+    {
+      "id": "q_019_dev_unanswerable_refusal",
+      "scenario": "clean",
+      "expected": "approved",
+      "expected_failing_checkers": [],
+      "actual": "approved",
+      "is_flagged": false,
+      "flag_reason": null,
+      "checker_results": {
+        "dsp_consistency": {
+          "checker_name": "dsp_consistency",
+          "passed": true,
+          "score": 1.0,
+          "rationale": "Üretilen yanıt DSP state ve ground truth verileriyle tam tutarlıdır.",
+          "token_usage": {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+            "estimated_cost_usd": 0.0
+          },
+          "latency_ms": 0.015020370483398438,
+          "execution_error": false,
+          "error_message": null
+        },
+        "faithfulness": {
+          "checker_name": "faithfulness",
+          "passed": true,
+          "score": 1.0,
+          "rationale": "Üretilen cevap, sağlanan kaynak bağlamda sorulan spesifik bir soru veya konu bulunmadığı için 'bilgi bulunmamaktadır' şeklinde dürüst ve doğru bir çıkarım yapmıştır. Bağlamda titreşim tanımı ve önleyici bakım felsefesi dışında bir teknik detay veya soruya yanıt teşkil edecek bir veri seti mevcut değildir.",
+          "token_usage": {
+            "prompt_tokens": 864,
+            "completion_tokens": 92,
+            "total_tokens": 956,
+            "estimated_cost_usd": 9.2e-05
+          },
+          "latency_ms": 810.7609748840332,
+          "execution_error": false,
+          "error_message": null
+        },
+        "sub_query_relevance": {
+          "checker_name": "sub_query_relevance",
+          "passed": true,
+          "score": 1.0,
+          "rationale": "Üretilen cevap, sağlanan bağlamda soruyu yanıtlayacak yeterli bilgi bulunmadığını dürüstçe ifade ederek epistemik ret kuralına uygun davranmıştır.",
+          "token_usage": {
+            "prompt_tokens": 555,
+            "completion_tokens": 55,
+            "total_tokens": 610,
+            "estimated_cost_usd": 5.8e-05
+          },
+          "latency_ms": 1872.974157333374,
+          "execution_error": false,
+          "error_message": null
+        }
+      },
+      "is_correct": true,
+      "latency_ms": 2688.92
+    },
+    {
+      "id": "q_020_dev_unanswerable_hallucinated",
+      "scenario": "unfaithful",
+      "expected": "retry_retrieval",
+      "expected_failing_checkers": [
+        "faithfulness"
+      ],
+      "actual": "retry_retrieval",
+      "is_flagged": false,
+      "flag_reason": null,
+      "checker_results": {
+        "dsp_consistency": {
+          "checker_name": "dsp_consistency",
+          "passed": true,
+          "score": 1.0,
+          "rationale": "Üretilen yanıt DSP state ve ground truth verileriyle tam tutarlıdır.",
+          "token_usage": {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+            "estimated_cost_usd": 0.0
+          },
+          "latency_ms": 0.07724761962890625,
+          "execution_error": false,
+          "error_message": null
+        },
+        "faithfulness": {
+          "checker_name": "faithfulness",
+          "passed": false,
+          "score": 0.0,
+          "rationale": "Verilen kaynak bağlamda titreşimin tanımı ve önleyici bakım felsefesi anlatılmaktadır. Üretilen cevapta geçen 'kavitasyon' ve '1450 RPM' gibi spesifik teknik iddialar kaynak metinlerde yer almamaktadır ve bu bilgiler bağlamdaki genel tanımlardan türetilebilecek makul alan çıkarımları değildir; doğrudan halüsinasyondur.",
+          "token_usage": {
+            "prompt_tokens": 877,
+            "completion_tokens": 106,
+            "total_tokens": 983,
+            "estimated_cost_usd": 9.8e-05
+          },
+          "latency_ms": 958.608865737915,
+          "execution_error": false,
+          "error_message": null
+        },
+        "sub_query_relevance": {
+          "checker_name": "sub_query_relevance",
+          "passed": false,
+          "score": 0.0,
+          "rationale": "Üretilen cevap, kullanıcının rulman arızalarının 4 aşamalı gelişim süreci ve bu süreçlerdeki frekans/ultrasonic sinyal değişimleri hakkındaki spesifik sorusunu tamamen cevapsız bırakmış, konuyla ilgisi olmayan kavitasyon ve RPM verilerine odaklanmıştır.",
+          "token_usage": {
+            "prompt_tokens": 574,
+            "completion_tokens": 88,
+            "total_tokens": 662,
+            "estimated_cost_usd": 6.9e-05
+          },
+          "latency_ms": 835.6971740722656,
+          "execution_error": false,
+          "error_message": null
+        }
+      },
+      "is_correct": true,
+      "latency_ms": 1798.85
+    }
+  ]
+}

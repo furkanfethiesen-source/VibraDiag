@@ -1,0 +1,183 @@
+{
+  "total_sessions": 8,
+  "resolved_clean_or_fixed": 4,
+  "flagged_max_cycles_count": 4,
+  "avg_cycles_to_resolution": 2.5,
+  "strategy_trigger_distribution": {
+    "domain_dictionary": 5,
+    "pseudo_relevance_feedback": 2,
+    "llm_query_rewriter": 5
+  },
+  "sessions": [
+    {
+      "id": "q_005_dev_clean",
+      "scenario": "clean",
+      "cycles_used": 1,
+      "final_route": "approved",
+      "cycle_history": []
+    },
+    {
+      "id": "q_009_dev_dsp_mismatch",
+      "scenario": "dsp_mismatch",
+      "cycles_used": 4,
+      "final_route": "approved_with_warning",
+      "cycle_history": [
+        {
+          "cycle": 1,
+          "decision": "retry_generation",
+          "reason": "DSP ground truth 'Dengesizlik (Unbalance)' arızası tespit etmişken üretilen metinde 'Hizasızlık (Misalignment)' iddia edilmiş veya Dengesizlik arızası reddedilmiştir."
+        },
+        {
+          "cycle": 2,
+          "decision": "retry_retrieval",
+          "strategy": "domain_dictionary",
+          "reason": "Üretilen cevap, verilen kaynak bağlamda yer alan 'window effect' veya 'sidelobe generation' gibi konularla hiçbir şekilde ilgili değildir. Cevapta geçen 'rotor unbalance' arızası, sağlanan teknik metinlerde hiç geçmemektedir ve bu metinlerden çıkarılabilecek bir sonuç değildir; tamamen bağlam dışı bir halüsinasyondur. | Üretilen cevap, kullanıcının FFT analizi, pencereleme etkisi ve pencere fonksiyonları hakkındaki teknik sorusuyla tamamen alakasızdır. Cevap, sinyal işleme teorisi yerine bir arıza teşhisine odaklanmıştır.",
+          "reformulated_query": "FFT analizinde pencereleme (Windowing / Leakage Effect) etkisi neden oluşur ve cam pencere fonksiyonları ne işe yarar? (Hanning penceresi)"
+        },
+        {
+          "cycle": 3,
+          "decision": "retry_retrieval",
+          "strategy": "pseudo_relevance_feedback",
+          "reason": "Üretilen cevap, verilen kaynak bağlamda yer alan 'window effect' veya 'sidelobe generation' gibi konularla hiçbir şekilde ilgili değildir. Cevapta geçen 'rotor unbalance' arızası, sağlanan teknik metinlerde hiç geçmemektedir ve bu metinlerden çıkarılabilecek bir sonuç değildir; tamamen bağlam dışı bir halüsinasyondur. | Üretilen cevap, kullanıcının FFT analizindeki pencereleme (windowing) ve sızıntı (leakage) etkisi ile ilgili teknik sorusuyla tamamen alakasızdır. Soru, sinyal işleme teorisi hakkındayken, cevap bir arıza teşhisi ile ilgilidir.",
+          "reformulated_query": "FFT analizinde pencereleme (Windowing / Leakage Effect) etkisi neden oluşur ve cam pencere fonksiyonları ne işe yarar? (Hanning penceresi) frequency window function"
+        },
+        {
+          "cycle": 4,
+          "decision": "approved_with_warning",
+          "reason": "Düzeltme döngüsü maksimum deneme sınırına ulaştı (Sistem güvenli çıkış yaptı)."
+        }
+      ]
+    },
+    {
+      "id": "q_014_dev_sub_query_gap",
+      "scenario": "sub_query_gap",
+      "cycles_used": 4,
+      "final_route": "approved_with_warning",
+      "cycle_history": [
+        {
+          "cycle": 1,
+          "decision": "retry_retrieval",
+          "strategy": "domain_dictionary",
+          "reason": "Cevap, rotorda dengesizlik arızasının spektrumdaki karakteristiklerini doğru bir şekilde açıklamıştır ancak ikinci alt soru olan 'düzeltici aksiyon adımları' kısmını açıkça atlamış ve bu konuda bilgi vermemiştir.",
+          "reformulated_query": "Rotorda dengesizlik (Unbalance) arızası spektrumda nedir? ve Bu arıza durumunda uygulanması gereken düzeltici aksiyon adımları nelerdir? (1X RPM, balanssızlık, rotor unbalance)"
+        },
+        {
+          "cycle": 2,
+          "decision": "retry_retrieval",
+          "strategy": "pseudo_relevance_feedback",
+          "reason": "Cevap, rotorda dengesizlik arızasının spektrumdaki karakteristiklerini (1X RPM ve faz farkı) doğru bir şekilde açıklamıştır. Ancak, kullanıcının ikinci sorusu olan 'uygulanması gereken düzeltici aksiyon adımları' kısmı cevapta açıkça belirtilmemiş ve atlanmıştır.",
+          "reformulated_query": "Rotorda dengesizlik (Unbalance) arızası spektrumda nedir? ve Bu arıza durumunda uygulanması gereken düzeltici aksiyon adımları nelerdir? (1X RPM, balanssızlık, rotor unbalance) unbalance rotor will"
+        },
+        {
+          "cycle": 3,
+          "decision": "retry_retrieval",
+          "strategy": "llm_query_rewriter",
+          "reason": "Cevap, rotorda dengesizlik arızasının spektrumdaki karakteristiklerini (1X RPM ve faz farkı) doğru bir şekilde açıklamıştır. Ancak, kullanıcının ikinci alt sorusu olan 'uygulanması gereken düzeltici aksiyon adımları' kısmı cevapta açıkça belirtilmemiş ve 'burada yer verilmemiştir' denilerek atlanmıştır. Bu nedenle kapsam eksiktir.",
+          "reformulated_query": "Rotorda dengesizlik (unbalance) arızasının spektrumdaki karakteristiklerini (1X RPM, faz farkı, BPFO/BPFI ve 1X/2X harmonikler) ve uygulanması gereken düzeltici aksiyon adımlarını (balans ayarları, rotor hizalama, FFT parametre optimizasyonu) açıklayan kaynaklar nelerdir?"
+        },
+        {
+          "cycle": 4,
+          "decision": "approved_with_warning",
+          "reason": "Düzeltme döngüsü maksimum deneme sınırına ulaştı (Sistem güvenli çıkış yaptı)."
+        }
+      ]
+    },
+    {
+      "id": "q_016_dev_clean_hard",
+      "scenario": "clean",
+      "cycles_used": 1,
+      "final_route": "approved",
+      "cycle_history": []
+    },
+    {
+      "id": "q_017_dev_unfaithful_1",
+      "scenario": "unfaithful",
+      "cycles_used": 4,
+      "final_route": "approved_with_warning",
+      "cycle_history": [
+        {
+          "cycle": 1,
+          "decision": "retry_retrieval",
+          "strategy": "domain_dictionary",
+          "reason": "Cevapta geçen 'plazma kaynaklı rezonans dalgalanması' ve 'kuantum filtreleme' ifadeleri, sağlanan kaynak bağlamda yer almadığı gibi, endüstriyel titreşim analizi disipliniyle de bağdaşmayan tamamen uydurma (halüsinasyon) kavramlardır. | Üretilen cevap, mekanik gevşeklik arızasının spektrumdaki harmonik ve karakteristikleri ile ilgili hiçbir teknik bilgi içermemektedir. Cevap, konuyla tamamen alakasız ve anlamsız terimler içermektedir.",
+          "reformulated_query": "Mekanik gevşeklik (Mechanical Looseness) arızası spektrumda hangi harmonikleri ve karakteristikleri oluşturur? (0.5X alt harmonik, structural looseness)"
+        },
+        {
+          "cycle": 2,
+          "decision": "retry_retrieval",
+          "strategy": "llm_query_rewriter",
+          "reason": "Üretilen cevap, sorulan teknik soruya (mekanik gevşekliğin harmonikleri ve karakteristikleri) dair hiçbir teknik bilgi içermemekte, sadece bağlama atıfta bulunan boş bir ifade sunmaktadır. Bağlamda yer alan teknik detaylar (harmonikler, spektrum karakteristikleri) cevapta açıklanmadığı için sadakat sağlanamamıştır. | Üretilen cevap, kullanıcının sorduğu teknik soruya (harmonikler ve karakteristikler) dair hiçbir bilgi içermemekte, sadece soruyu tekrar eden anlamsız bir cümle kurmaktadır.",
+          "reformulated_query": "Mekanik gevşeklik (Mechanical Looseness) arızasında BPFO ve BPFI ile ilişkili 0.5X, 1X, 2X harmoniklerinin ve structural looseness karakteristiklerinin spektrumda nasıl bir dağılım gösterdiğini ve FFT parametrelerinin bu analizde nasıl ayarlanacağını açıklayan teknik bilgi."
+        },
+        {
+          "cycle": 3,
+          "decision": "retry_retrieval",
+          "strategy": "llm_query_rewriter",
+          "reason": "Üretilen cevap, sorulan teknik soruya (mekanik gevşekliğin harmonikleri ve karakteristikleri) dair hiçbir teknik bilgi içermemekte, sadece bağlama atıfta bulunan boş bir ifade sunmaktadır. Bağlamda yer alan teknik detaylar (harmonikler, spektrum karakteristikleri) cevapta açıklanmadığı için sadakat sağlanamamıştır. | Üretilen cevap, kullanıcının sorduğu teknik detayları (0.5X, 1X, 2X harmonikleri, BPFO/BPFI ilişkisi ve FFT parametreleri) içermemekte, sadece sorunun konusunu tekrar eden anlamsız bir cümle kurmaktadır. Soruya hiçbir teknik yanıt verilmemiştir.",
+          "reformulated_query": "Mekanik gevşeklik (Mechanical Looseness) arızalarında BPFO (Ball Pass Frequency Outer) ve BPFI (Ball Pass Frequency Inner) ile ilişkili 0.5X, 1X, 2X harmoniklerinin ve yapısal gevşeklik karakteristiklerinin spektrumda dağılımını ve bu analizde kullanılan FFT (Fast Fourier Transform) parametrelerinin (örneğin, örneklem oranı, pencereleme, çözünürlük) ayarlanmasını açıklayan teknik bilgi."
+        },
+        {
+          "cycle": 4,
+          "decision": "approved_with_warning",
+          "reason": "Düzeltme döngüsü maksimum deneme sınırına ulaştı (Sistem güvenli çıkış yaptı)."
+        }
+      ]
+    },
+    {
+      "id": "q_018_dev_unfaithful_2",
+      "scenario": "unfaithful",
+      "cycles_used": 4,
+      "final_route": "approved_with_warning",
+      "cycle_history": [
+        {
+          "cycle": 1,
+          "decision": "retry_retrieval",
+          "strategy": "domain_dictionary",
+          "reason": "Cevap, kaynak bağlamda yer almayan uydurma standartlar (ISO 99999 ve NASA-VIB) içermekte ve bağlamda hiç bahsedilmeyen rotor sıcaklığı gibi veriler üzerinden halüsinasyon içeren bir yargıda bulunmaktadır. | Üretilen cevap, kullanıcının sorduğu 'Darbe Testi'nin nasıl uygulanacağına dair hiçbir teknik bilgi içermemekte olup, konuyla tamamen alakasız ve anlamsız bir içerik sunmaktadır.",
+          "reformulated_query": "Rezonans (Resonance) ve doğal frekans tespiti için Darbe Testi (Bump Test) nasıl uygulanır?"
+        },
+        {
+          "cycle": 2,
+          "decision": "retry_retrieval",
+          "strategy": "llm_query_rewriter",
+          "reason": "Üretilen cevap, bağlamda yer alan teknik detayları (Darbe Testi uygulama adımları, frekans aralıkları veya standart prosedürler) açıklamak yerine, sadece bağlama atıfta bulunan boş bir onay cümlesi içermektedir. Bağlamda yer alan teknik bilgi aktarılmadığı için sadakat değerlendirmesi yapılamaz. | Üretilen cevap, kullanıcının sorduğu 'Darbe Testi nasıl uygulanır?' sorusuna dair hiçbir teknik yöntem, adım veya açıklama içermemektedir. Sadece soruyu tekrar eden ve bağlamdan bahseden anlamsız bir cümle kurulmuştur.",
+          "reformulated_query": "Rezonans (Resonance) ve doğal frekans tespiti için Darbe Testi (Bump Test) uygulama adımları ve ISO normlarına göre 1X/2X harmonikler ve BPFO/BPFI analizleri ile FFT parametrelerinin ayarlanması nasıl yapılır?"
+        },
+        {
+          "cycle": 3,
+          "decision": "retry_retrieval",
+          "strategy": "llm_query_rewriter",
+          "reason": "Üretilen cevap, bağlamda yer alan teknik detayları (Darbe Testi uygulama adımları, frekans aralıkları veya standart prosedürler) açıklamak yerine, sadece bağlama atıfta bulunan boş bir onay cümlesi içermektedir. Bağlamda yer alan teknik bilgi aktarılmadığı için sadakat değerlendirmesi yapılamaz. | Cevap, kullanıcının sorduğu Darbe Testi uygulama adımları, ISO normlarına göre harmonik analizler (1X/2X), rulman arıza frekansları (BPFO/BPFI) ve FFT parametre ayarları gibi teknik detayların hiçbirini içermemektedir. Sadece sorunun konusunu teyit eden bir cümle kurulmuştur.",
+          "reformulated_query": "Rezonans (Resonance) ve doğal frekans tespiti için Darbe Testi (Bump Test) uygulama adımları, ISO 14835-1 ve ISO 13373-1 normlarına göre 1X/2X harmonikler, rulman arıza frekansları (BPFO/BPFI) analizleri ve FFT parametrelerinin (örnekleme hızı, çözünürlük, pencere tipi) ayarlanması nasıl yapılır?"
+        },
+        {
+          "cycle": 4,
+          "decision": "approved_with_warning",
+          "reason": "Düzeltme döngüsü maksimum deneme sınırına ulaştı (Sistem güvenli çıkış yaptı)."
+        }
+      ]
+    },
+    {
+      "id": "q_019_dev_unanswerable_refusal",
+      "scenario": "clean",
+      "cycles_used": 1,
+      "final_route": "approved",
+      "cycle_history": []
+    },
+    {
+      "id": "q_020_dev_unanswerable_hallucinated",
+      "scenario": "unfaithful",
+      "cycles_used": 1,
+      "final_route": "approved",
+      "cycle_history": [
+        {
+          "cycle": 1,
+          "decision": "retry_retrieval",
+          "strategy": "domain_dictionary",
+          "reason": "Verilen kaynak bağlamda titreşimin tanımı ve önleyici bakım felsefesi anlatılmaktadır. Üretilen cevapta geçen 'kavitasyon' ve '1450 RPM' gibi spesifik teknik iddialar kaynak metinlerde yer almamaktadır ve bu bilgiler bağlamdaki genel tanımlardan türetilebilecek makul alan çıkarımları değildir; doğrudan halüsinasyondur. | Üretilen cevap, kullanıcının rulman arızalarının 4 aşamalı gelişim süreci ve bu süreçlerdeki frekans/ultrasonic sinyal değişimleri hakkındaki spesifik sorusunu tamamen cevapsız bırakmış, konuyla ilgisi olmayan kavitasyon ve RPM verilerine odaklanmıştır.",
+          "reformulated_query": "Rulman arızalarının gelişme aşamalarında (Stage 1 - Stage 4) frekans spektrumu ve ultrasonic / envelope sinyalleri nasıl değişir?"
+        }
+      ]
+    }
+  ]
+}
