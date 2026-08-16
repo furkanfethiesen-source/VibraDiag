@@ -56,3 +56,12 @@ decomposer:
   confidence_threshold: 0.55
   model_path: "src/query_decomposer/models/complexity_pipeline.pkl"
   training_data_path: "data/decomposer_data/training.jsonl"
+
+self_corrector:
+  dsp_consistency_threshold: 1.0
+  faithfulness_threshold: 0.70
+  relevance_threshold: 0.65
+  prf_min_score_guard: 0.40
+  max_retrieval_attempts: 2
+  max_generation_attempts: 2
+  global_max_cycles: 3
