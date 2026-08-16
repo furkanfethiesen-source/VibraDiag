@@ -220,3 +220,63 @@ decomposer_prompt:
     Birden fazla kaynaktan destek alınıyorsa: [K1, K3].
     Kaynak gösterilemeyen bir iddia kesinlikle yazılmamalıdır.
     Yanıtın sonunda "Kullanılan Kaynaklar:" başlığı altında kaynak listesi ver.
+
+corrector_prompts:
+  faithfulness_prompt: |
+    Sen endüstriyel titreşim analizi ve doküman sadakati (Faithfulness) denetleyicisisin.
+    Aşağıda verilen KAYNAK BAĞLAM (Context) ve ÜRETİLEN CEVAP'ı (Answer) incele.
+
+    Görevin:
+    1. Üretilen cevaptaki teknik iddiaların (standart isimleri, limitler, frekans formülleri, mekanizma açıklamaları) verilen kaynak bağlam tarafından desteklenip desteklenmediğini kontrol et.
+    2. Bağlamda yer almayan veya bağlamla çelişen uydurma iddialar (halüsinasyon) varsa tespit et.
+    3. ÖNEMLİ (Domain Çıkarımları Kuralı): Eğer cevaptaki bir bilgi veya teknik parametre (örneğin ISO 10816 standartlarından bahsedilirken RMS hız, makine büyüklüğü, montaj tipi veya Zone sınırları gibi standartla doğrudan ilişkili temel kavramlar), bağlamda adı geçen bir standardın veya konseptin doğal ve ayrılmaz bir parçası ise bunu halüsinasyon olarak DEĞİL, makul alan bilgisi çıkarımı (reasonable domain inference) olarak kabul et ve skoru düşürme. Ancak bağlamda hiç geçmeyen uydurma standartlar (ISO 99999 vb.) veya fiziki olarak ilgisiz iddialar (plazma/kuantum filtreleme) kesinlikle halüsinasyondur (skor 0.0).
+    4. 0.0 ile 1.0 arasında bir Sadakat Skoru (faithfulness_score) ve kısa bir gerekçe ver.
+    - 1.0: Tüm iddialar bağlamda mevcut veya bağlamdaki standartların doğal/makul çıkarımıdır.
+    - 0.5: Kısmen destekleniyor, ancak doğrulanmamış bazı iddialar var.
+    - 0.0: Cevap bağlamdan tamamen kopuk veya bariz halüsinasyon içeriyor.
+
+    KAYNAK BAĞLAM:
+    {context}
+
+    ÜRETİLEN CEVAP:
+    {answer}
+
+    Çıktıyı SADECE aşağıdaki JSON formatında döndür:
+    {{
+    "score": 0.95,
+    "rationale": "Cevaptaki tüm teknik açıklamalar ve standart sınırları verilen bağlam parçalarıyla doğrudan örtüşmektedir."
+    }}
+
+  relevance_prompt: |
+    Sen bir Soru-Cevap Alaka ve Kapsam (Relevance & Completeness) denetleyicisisin.
+    Aşağıda verilen KULLANICI SORUSU, ALT-SORGULAR (varsa) ve ÜRETİLEN CEVAP'ı incele.
+
+    Görevin:
+    1. Üretilen cevabın kullanıcının ana sorusunu ve listelenen TÜM alt-soruları yanıtlayıp yanıtlamadığını kontrol et.
+    2. Eğer önemli bir alt soru tamamen yanıtsız bırakılmış veya atlanmışsa skoru düşür.
+    3. ÖNEMLİ (Epistemik Ret / Refusal Kuralı): Eğer üretilen cevap, bağlamda yeterli bilgi bulunmadığını açıkça ve dürüstçe ifade ediyorsa (örneğin "bağlamda bilgi bulunmamaktadır", "yeterli veri yok"), bu durum bir eksiklik/alakasızlık DEĞİL, doğru bir ret (epistemic refusal) davranışıdır. Bu durumda skoru 1.0 (veya en az 0.85) olarak değerlendir ve gerekçede dürüst ret olduğunu belirt.
+    4. 0.0 ile 1.0 arasında bir Alaka/Kapsam Skoru (relevance_score) ve kısa bir gerekçe ver.
+    - 1.0: Soru ve tüm alt-sorular eksiksiz cevaplanmış VEYA yetersiz bağlam dürüstçe reddedilmiş.
+    - 0.5: Sadece bir kısım cevaplanmış, diğer alt soru atlanmış.
+    - 0.0: Cevap soruyla tamamen alakasız veya konu dışı.
+
+    KULLANICI SORUSU: {user_query}
+    ALT SORGULAR: {sub_queries}
+    ÜRETİLEN CEVAP: {answer}
+
+    Çıktıyı SADECE aşağıdaki JSON formatında döndür:
+    {{
+    "score": 0.90,
+    "rationale": "Cevap hem ana arıza mekanizmasını hem de gerekli bakım önlemlerini eksiksiz kapsamaktadır."
+    }}
+
+  rewrite_prompt: |
+    Sen endüstriyel titreşim analizi ve kestirimci bakım uzmanısın.
+    Aşağıdaki kullanıcı sorusu arama motorunda (vektör/hibrit arama) yetersiz veya alakasız sonuçlar verdi.
+
+    Kullanıcı Sorusu: {query}
+    Başarısızlık Nedeni: {failure_reason}
+
+    Görevin:
+    Sorguyu teknik terimleri (ISO normları, BPFO/BPFI, 1X/2X harmonikler, FFT parametreleri vb.) koruyarak veya eksik olanları ekleyerek tek satırlık net ve aranabilir bir sorgu olarak YENİDEN YAZ.
+    Sadece yeniden yazılmış yeni sorguyu döndür, açıklama veya ek metin yazma.
