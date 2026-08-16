@@ -105,6 +105,22 @@ def generation_node(state: Any) -> dict[str, Any]:
         is_followup=is_followup,
         is_decomposed=is_decomposed,
     )
+
+    previous_failure = state_dict.get("previous_failure_reason")
+    if previous_failure:
+        system_prompt += (
+            f"\n\n[DÜZELTME TALİMATI / SELF-CORRECTION GUIDANCE]\n"
+            f"Önceki üretim doğrulama denetiminden geçemedi:\n"
+            f"Gerekçe: {previous_failure}\n"
+            f"Lütfen yanıtınızı bu hatayı giderecek, verilen sinyal/DSP verileri ve standartlarla %100 tutarlı olacak şekilde revize edin."
+        )
+
+    if state_dict.get("is_flagged"):
+        system_prompt += (
+            "\n\n[DÜŞÜK GÜVEN TALİMATI]\n"
+            "Bu sorgu için kesin kanıtlar sınırlıdır. Kesin iddialarda bulunmaktan kaçının ve temkinli, öneri niteliğinde bir dil kullanın."
+        )
+
     user_message = build_user_message(
         query=user_query,
         context=merged_context,
@@ -115,6 +131,7 @@ def generation_node(state: Any) -> dict[str, Any]:
         user_message=user_message,
         chat_history=chat_history if isinstance(chat_history, list) else None,
     )
+
 
     client = GroqClient()
     try:

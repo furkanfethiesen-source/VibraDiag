@@ -7,10 +7,15 @@ Provides a unified interface to execute completion calls against Groq (or fallba
 from __future__ import annotations
 
 import logging
+import logging
+import os
 from typing import Any
 
-from groq import Groq
+from dotenv import load_dotenv
 
+load_dotenv()
+
+from groq import Groq
 from config_loader import load_appcfg
 
 logger = logging.getLogger(__name__)
@@ -28,10 +33,23 @@ class GroqClient:
         self.temperature = provided_cfg.get("temperature", 0.3)
         self.max_tokens = provided_cfg.get("max_tokens", 2048)
 
-        if api_key:
-            self._client = Groq(api_key=api_key)
-        else:
-            self._client = Groq()
+        self.api_key = api_key or os.getenv("GROQ_API_KEY")
+        self._client = None
+        if self.api_key:
+            try:
+                self._client = Groq(api_key=self.api_key)
+            except Exception as e:
+                logger.debug("Groq client init exception: %s", e)
+
+    @property
+    def client(self) -> Groq:
+        if self._client is None:
+            key = self.api_key or os.getenv("GROQ_API_KEY")
+            if not key:
+                raise ValueError("GROQ_API_KEY environment variable is missing or empty.")
+            self._client = Groq(api_key=key)
+        return self._client
+
 
     def generate(
         self,
