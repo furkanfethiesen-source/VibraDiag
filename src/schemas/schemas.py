@@ -1,6 +1,6 @@
 
 from pydantic import BaseModel, Field
-from typing import Literal, Optional, Dict
+from typing import Literal, Optional, Dict, Any
 from dataclasses import dataclass
 
 class _PeakItem(BaseModel):
@@ -167,4 +167,53 @@ class ClassifierResult(BaseModel):
 class DecomposeResult(BaseModel):
     """LLM decomposer çıktısı."""
     sub_queries: list[str] = Field(default_factory=list)
-    reasoning: str | None = None  
+    reasoning: str | None = None
+
+
+class TokenUsageInfo(BaseModel):
+    """Token kullanımı ve tahmini maliyet modeli."""
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    estimated_cost_usd: float = 0.0
+
+
+class CheckerResult(BaseModel):
+    """Tekil bir doğrulama (checker) adımının sonucu."""
+    checker_name: str
+    passed: bool
+    score: float = Field(ge=0.0, le=1.0, description="0.0 - 1.0 arası güven/uyum skoru")
+    rationale: str = Field(default="", description="Kararın gerekçesi veya hata açıklaması")
+    token_usage: TokenUsageInfo = Field(default_factory=TokenUsageInfo)
+    latency_ms: float = 0.0
+    execution_error: bool = False
+    error_message: Optional[str] = None
+
+
+
+class CorrectionDecision(BaseModel):
+    """Self-Corrector node'unun nihai yönlendirme kararı."""
+    status: Literal["approved", "retry_retrieval", "retry_generation", "flagged"]
+    trigger_reasons: list[str] = Field(default_factory=list)
+    checker_results: dict[str, CheckerResult] = Field(default_factory=dict)
+    reformulated_query: Optional[str] = None
+    strategy_used: Optional[str] = None
+    total_tokens: TokenUsageInfo = Field(default_factory=TokenUsageInfo)
+    total_latency_ms: float = 0.0
+    needs_review: bool = False
+    warning_message: Optional[str] = None
+
+
+class CorrectorBenchmarkItem(BaseModel):
+    """Sentetik Corrector değerlendirme veri seti öğesi."""
+    id: str
+    scenario_type: Literal["clean", "dsp_mismatch", "unfaithful", "sub_query_gap"]
+    user_query: str
+    dsp_ground_truth: Optional[dict[str, Any]] = None
+    retrieved_contexts: list[dict[str, Any]] = Field(default_factory=list)
+    sub_queries: list[str] = Field(default_factory=list)
+    candidate_response: str
+    expected_decision: Literal["approved", "retry_retrieval", "retry_generation", "flagged"]
+    expected_failing_checkers: list[str] = Field(default_factory=list)
+    notes: Optional[str] = None
+

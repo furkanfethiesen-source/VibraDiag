@@ -2,11 +2,15 @@
 
 from .schemas import (
     BearingStageSchema,
+    CheckerResult,
+    CorrectionDecision,
+    CorrectorBenchmarkItem,
     OrbitSchema,
     SeverityChartSchema,
     SpectrumSchema,
     TableChunk,
     TextChunk,
+    TokenUsageInfo,
     UnifiedSchema,
     VisualChunk,
 )
@@ -25,7 +29,12 @@ __all__ = [
     "TextChunk",
     "TableChunk",
     "VisualChunk",
+    "TokenUsageInfo",
+    "CheckerResult",
+    "CorrectionDecision",
+    "CorrectorBenchmarkItem",
     "VibraDiagMainState",
     "SignalProcessingInternalState",
     "RetrievalState",
 ]
+

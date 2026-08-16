@@ -44,6 +44,15 @@ class VibraDiagMainState(TypedDict, total=False):
 
     errors: Annotated[list[str], operator.add]
 
+    correction_attempts: dict[str, int]
+    excluded_chunk_ids: Annotated[list[str], operator.add]
+    reformulated_query: str | None
+    previous_failure_reason: str | None
+    is_flagged: bool
+    flag_reason: str | None
+    corrector_metrics: dict[str, Any]
+    corrector_history: list[dict[str, Any]]
+
 
 class SignalProcessingInternalState(TypedDict, total=False):
     """
@@ -106,6 +115,11 @@ class RetrievalState(TypedDict, total=False):
     sub_queries: list[str]
     decomposer_reasoning: str | None
     sub_query_passages: dict[str, list[dict[str, Any]]]
+
+    excluded_chunk_ids: Annotated[list[str], operator.add]
+    reformulated_query: str | None
+    attempt_number: int
+
 
 
 
