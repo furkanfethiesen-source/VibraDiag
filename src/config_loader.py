@@ -14,6 +14,7 @@ class AppConfig(BaseModel):
     vision_llm: Dict[str, Any]
     paths: Dict[str, Any] = {}
     decomposer: Dict[str, Any] = {}
+    self_corrector: Dict[str, Any] = {}
 
 class RetrievalConfig(BaseModel):
     parent_child_retrieval: Dict[str, Any] = {}
@@ -30,6 +31,7 @@ class PromptsConfig(BaseModel):
     parsing_prompts: Dict[str, Any] = {}
     generation_prompt: Dict[str, Any] = {}
     decomposer_prompt: Dict[str, Any] = {}
+    corrector_prompts: Dict[str, Any] = {}
 
 
 @lru_cache(maxsize=1)
