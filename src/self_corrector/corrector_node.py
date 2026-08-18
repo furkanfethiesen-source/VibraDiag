@@ -206,6 +206,52 @@ def self_corrector_node(
             }],
         }
 
+    errors = state_dict.get("errors") or []
+    generation_failed = any("LLM Generation Error" in str(e) for e in errors[-1:])
+    if not generation_failed and ("teknik hata oluştu" in llm_response.lower() or not llm_response.strip()):
+        generation_failed = True
+
+    if generation_failed:
+        logger.warning("Upstream generation failure detected. Routing directly to retry_generation shortcut.")
+        new_generation_attempts = generation_attempts + 1
+        new_total_attempts = total_attempts + 1
+        updated_attempts = {
+            "retrieval": retrieval_attempts,
+            "generation": new_generation_attempts,
+            "total": new_total_attempts,
+        }
+
+        fail_reason = "LLM yanıt üretimi sırasında teknik hata oluştu."
+        decision = CorrectionDecision(
+            status="retry_generation",
+            trigger_reasons=["generation_runtime_error"],
+            checker_results={},
+            total_tokens=TokenUsageInfo(),
+            total_latency_ms=(time.time() - start_total_time) * 1000,
+            needs_review=False,
+        )
+
+        LocalCorrectorEventLogger.log_event(
+            session_id=session_id,
+            query=user_query,
+            decision=decision,
+            attempt_number=new_total_attempts,
+        )
+
+        return {
+            "route_decision": "retry_generation",
+            "is_flagged": False,
+            "flag_reason": None,
+            "previous_failure_reason": fail_reason,
+            "correction_attempts": updated_attempts,
+            "checker_results": {},
+            "corrector_history": [{
+                "cycle": new_total_attempts,
+                "decision": "retry_generation",
+                "reason": fail_reason,
+            }],
+        }
+
     dsp_result: CheckerResult = DSPConsistencyChecker.check(
         generated_text=llm_response,
         signal_data=signal_data,

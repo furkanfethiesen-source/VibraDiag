@@ -66,7 +66,12 @@ def _is_negated(text: str, term: str, window: int = 6) -> bool:
     norm_text = normalize_text_tr(text)
     norm_term = normalize_text_tr(term)
 
-    sentences = [s.strip() for s in re.split(r"[.!?;\n]+", norm_text) if s.strip()]
+
+    sentences = [
+        s.strip()
+        for s in re.split(r"[.!?;\n,]+|\b(?:ancak|fakat|lakin|ama|oysaki|rağmen)\b", norm_text)
+        if s.strip()
+    ]
 
     for sent in sentences:
         if norm_term not in sent:
@@ -173,9 +178,16 @@ class DSPConsistencyChecker:
 
         text_lower = generated_text.lower()
 
+        from deterministic_tools.fault_analyzer import pick_primary_fault
+        fault_summary = pick_primary_fault(
+            direct_spectrum_diagnosis=signal_data.get("direct_spectrum_diagnosis"),
+            envelope_diagnosis=signal_data.get("envelope_diagnosis"),
+            reciprocating_diagnosis=signal_data.get("reciprocating_diagnosis"),
+        )
         primary_fault = (
             signal_data.get("primary_fault")
-            or signal_data.get("envelope_diagnosis", {}).get("fault_type")
+            or fault_summary.get("primary_fault_name")
+            or fault_summary.get("fault_type_abbr")
             or signal_data.get("fault_type")
             or signal_data.get("fault_type_abbr")
         )
