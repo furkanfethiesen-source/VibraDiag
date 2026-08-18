@@ -13,6 +13,9 @@ from typing import Any
 from config_loader import load_prompts_cfg
 
 
+from deterministic_tools.fault_analyzer import pick_primary_fault
+
+
 def build_signal_context(signal_data: dict[str, Any] | None) -> str:
     """
     Format structured signal analysis results into a clean markdown text representation for the LLM.
@@ -32,7 +35,7 @@ def build_signal_context(signal_data: dict[str, Any] | None) -> str:
 
     lines = ["=== SİNYAL ANALİZİ VE ARİZA BULGULARI ==="]
 
-    metadata = signal_data.get("metadata", {})
+    metadata = signal_data.get("machine_metadata") or signal_data.get("metadata") or {}
     if isinstance(metadata, dict):
         machine_name = metadata.get("machine_name", "")
         machine_type = metadata.get("machine_type", "")
@@ -40,57 +43,70 @@ def build_signal_context(signal_data: dict[str, Any] | None) -> str:
         point = metadata.get("measurement_point", "")
         if machine_name or machine_type or rpm:
             lines.append(
-                f"- Makine Bilgisi: {machine_name} | Tip: {machine_type} | RPM: {rpm} | Ölçüm Noktası: {point}"
+                f"- Makine Bilgisi: {machine_name or 'Endüstriyel Ekipman'} | Tip: {machine_type} | RPM: {rpm}"
+                + (f" | Ölçüm Noktası: {point}" if point else "")
             )
     elif hasattr(metadata, "machine_name"):
         lines.append(
             f"- Makine Bilgisi: {metadata.machine_name} | Tip: {metadata.machine_type} | RPM: {metadata.rpm}"
         )
 
-    rms = signal_data.get("overall_rms") or signal_data.get("vibration_velocity_rms_mm_s")
-    peak = signal_data.get("peak_value")
-    crest = signal_data.get("crest_factor")
-    kurt = signal_data.get("kurtosis")
-    iso_zone = signal_data.get("iso_zone") or signal_data.get("iso_severity_zone")
+    td_stats = signal_data.get("time_domain_stats") or {}
+    rms = td_stats.get("overall_rms") or signal_data.get("overall_rms") or signal_data.get("vibration_velocity_rms_mm_s")
+    peak = td_stats.get("peak_value") or signal_data.get("peak_value")
+    crest = td_stats.get("crest_factor") or signal_data.get("crest_factor")
+    kurt = td_stats.get("kurtosis") or signal_data.get("kurtosis")
+    iso_zone = signal_data.get("iso_severity_zone") or signal_data.get("iso_zone")
     iso_meaning = signal_data.get("iso_severity_meaning", "")
 
     stats = []
     if rms is not None:
-        stats.append(f"RMS: {rms:.3f} mm/s")
+        stats.append(f"RMS: {float(rms):.3f} mm/s")
     if peak is not None:
-        stats.append(f"Peak: {peak:.3f}")
+        stats.append(f"Peak: {float(peak):.3f}")
     if crest is not None:
-        stats.append(f"Crest Factor: {crest:.2f}")
+        stats.append(f"Crest Factor: {float(crest):.2f}")
     if kurt is not None:
-        stats.append(f"Kurtosis: {kurt:.2f}")
+        stats.append(f"Kurtosis: {float(kurt):.2f}")
     if stats:
         lines.append(f"- Zaman Alanı İstatistikleri: {', '.join(stats)}")
 
     if iso_zone:
         lines.append(f"- ISO Değerlendirmesi: Bölge {iso_zone} ({iso_meaning})")
 
-    dominant = signal_data.get("dominant_frequencies", [])
-    if dominant:
-        lines.append("- Baskın Frekans Bileşenleri:")
-        for df in dominant:
-            if isinstance(df, dict):
-                lines.append(f"  * {df.get('order', 'N/A')}: {df.get('freq_hz', 0.0)} Hz (Genlik: {df.get('amplitude', 0.0)})")
-            else:
-                lines.append(f"  * {df}")
+    fault_summary = pick_primary_fault(
+        direct_spectrum_diagnosis=signal_data.get("direct_spectrum_diagnosis"),
+        envelope_diagnosis=signal_data.get("envelope_diagnosis"),
+        reciprocating_diagnosis=signal_data.get("reciprocating_diagnosis"),
+    )
+    primary_fault = fault_summary.get("primary_fault_name")
+    if primary_fault:
+        lines.append(
+            f"- Birincil Tespit Edilen Arıza: **{primary_fault}** "
+            f"(Güven: {fault_summary.get('confidence', 0.0):.2f}, Şiddet Skoru: {fault_summary.get('score', 0.0):.2f})"
+        )
 
-    fault_indicators = signal_data.get("fault_indicators", [])
+    all_faults = fault_summary.get("all_faults", [])
+    if all_faults:
+        lines.append("- Doğrulanmış Birincil/İkincil Arıza Göstergeleri:")
+        for f in all_faults:
+            lines.append(
+                f"  * **{f.get('name')}**: Güven={f.get('confidence', 0.0):.2f}, "
+                f"Şiddet={f.get('severity', 0.0):.2f} (Skor={f.get('score', 0.0):.2f})"
+            )
+
+    weak_faults = fault_summary.get("weak_candidates", [])
+    if weak_faults:
+        lines.append("- Olası Düşük Frekanslı / Zayıf Göstergeler (Gürültü Şüphesi Taşıyan İkincil Belirtiler):")
+        for wf in weak_faults[:4]:
+            lines.append(
+                f"  * {wf.get('name')}: Güven={wf.get('confidence', 0.0):.2f}, "
+                f"Şiddet={wf.get('severity', 0.0):.2f} (Not: Yetersiz harmonik/yan bant nedeniyle zayıf adaydır)"
+            )
+
     envelope_diag = signal_data.get("envelope_diagnosis", {})
     direct_diag = signal_data.get("direct_spectrum_diagnosis", {})
     recip_diag = signal_data.get("reciprocating_diagnosis", {})
-
-    if fault_indicators:
-        lines.append("- Tespit Edilen Arıza Göstergeleri:")
-        for fi in fault_indicators:
-            if isinstance(fi, dict):
-                lines.append(
-                    f"  * {fi.get('type', 'Bilinmeyen Arıza')}: "
-                    f"Güven={fi.get('confidence', 0.0)}, Açıklama={fi.get('description', '')}"
-                )
 
     if envelope_diag:
         lines.append("- Rulman Zarf Analizi Teşhisi:")
@@ -103,10 +119,6 @@ def build_signal_context(signal_data: dict[str, Any] | None) -> str:
     if recip_diag:
         lines.append("- Pistonlu Makine Teşhisi:")
         lines.append(f"  {json.dumps(recip_diag, ensure_ascii=False, indent=2)}")
-
-    summary = signal_data.get("expert_summary", "")
-    if summary:
-        lines.append(f"- Uzman Ön Analiz Özeti:\n  {summary}")
 
     return "\n".join(lines)
 
@@ -131,59 +143,43 @@ def build_initial_signal_query(signal_data: dict[str, Any] | None) -> str:
     if isinstance(signal_data, object) and hasattr(signal_data, "model_dump"):
         signal_data = signal_data.model_dump()
 
-    prompts_cfg = load_prompts_cfg()
-    gen_prompt_cfg = getattr(prompts_cfg, "generation_prompt", {}) or {}
-    template = gen_prompt_cfg.get(
-        "initial_signal_query_template",
-        "{machine_type} makinesinin {measurement_point} bölgesinde {fault_name} tespiti yapılmıştır.\n"
-        "ISO Şiddet Değerlendirmesi: Bölge {iso_zone} ({iso_meaning}).\n"
-        "Titreşim Metrikleri: RMS {rms} mm/s, Peak {peak}, Crest Factor {crest_factor}, Kurtosis {kurtosis}.\n\n"
-        "Bu hatayı teknik olarak detaylıca açıkla, olası kök nedenleri sırala ve bu durum için yapılması gereken acil müdahale ile önleyici bakım adımlarını detaylandır."
-    )
-
-    metadata = signal_data.get("metadata", {})
+    metadata = signal_data.get("machine_metadata") or signal_data.get("metadata") or {}
     if not isinstance(metadata, dict):
         metadata = {}
 
-    machine_type = metadata.get("machine_type") or metadata.get("machine_name") or "Ekipman"
+    machine_name = metadata.get("machine_name") or metadata.get("machine_type") or "Ekipman"
     measurement_point = metadata.get("measurement_point") or "Ölçüm Noktası"
 
-    fault_indicators = signal_data.get("fault_indicators", [])
-    fault_names = []
-    for fi in fault_indicators:
-        if isinstance(fi, dict) and fi.get("type"):
-            fault_names.append(str(fi.get("type")))
-        elif isinstance(fi, str):
-            fault_names.append(fi)
+    fault_summary = pick_primary_fault(
+        direct_spectrum_diagnosis=signal_data.get("direct_spectrum_diagnosis"),
+        envelope_diagnosis=signal_data.get("envelope_diagnosis"),
+        reciprocating_diagnosis=signal_data.get("reciprocating_diagnosis"),
+    )
+    fault_name = fault_summary.get("primary_fault_name") or "mekanik arıza belirtisi"
 
-    fault_name = ", ".join(fault_names) if fault_names else "mekanik arıza belirtisi"
-
-    iso_zone = signal_data.get("iso_zone") or signal_data.get("iso_severity_zone") or "N/A"
+    iso_zone = signal_data.get("iso_severity_zone") or signal_data.get("iso_zone") or "N/A"
     iso_meaning = signal_data.get("iso_severity_meaning") or "Belirtilmedi"
 
-    rms = signal_data.get("overall_rms") or signal_data.get("vibration_velocity_rms_mm_s")
-    rms_str = f"{rms:.3f}" if rms is not None else "N/A"
+    td_stats = signal_data.get("time_domain_stats") or {}
+    rms = td_stats.get("overall_rms") or signal_data.get("overall_rms") or signal_data.get("vibration_velocity_rms_mm_s")
+    rms_str = f"{float(rms):.3f}" if rms is not None else "N/A"
 
-    peak = signal_data.get("peak_value")
-    peak_str = f"{peak:.3f}" if peak is not None else "N/A"
+    peak = td_stats.get("peak_value") or signal_data.get("peak_value")
+    peak_str = f"{float(peak):.3f}" if peak is not None else "N/A"
 
-    crest = signal_data.get("crest_factor")
-    crest_str = f"{crest:.2f}" if crest is not None else "N/A"
+    crest = td_stats.get("crest_factor") or signal_data.get("crest_factor")
+    crest_str = f"{float(crest):.2f}" if crest is not None else "N/A"
 
-    kurt = signal_data.get("kurtosis")
-    kurt_str = f"{kurt:.2f}" if kurt is not None else "N/A"
+    kurt = td_stats.get("kurtosis") or signal_data.get("kurtosis")
+    kurt_str = f"{float(kurt):.2f}" if kurt is not None else "N/A"
 
-    return template.format(
-        machine_type=machine_type,
-        measurement_point=measurement_point,
-        fault_name=fault_name,
-        iso_zone=iso_zone,
-        iso_meaning=iso_meaning,
-        rms=rms_str,
-        peak=peak_str,
-        crest_factor=crest_str,
-        kurtosis=kurt_str,
-    ).strip()
+    query_text = (
+        f"{machine_name} makinesinin {measurement_point} bölgesinde {fault_name} tespiti yapılmıştır.\n"
+        f"ISO Şiddet Değerlendirmesi: Bölge {iso_zone} ({iso_meaning}).\n"
+        f"Titreşim Metrikleri: RMS {rms_str} mm/s, Peak {peak_str}, Crest Factor {crest_str}, Kurtosis {kurt_str}.\n\n"
+        "Bu hatayı teknik olarak detaylıca açıkla, olası kök nedenleri sırala ve bu durum için yapılması gereken acil müdahale ile önleyici bakım adımlarını detaylandır."
+    )
+    return query_text
 
 
 def build_system_prompt(

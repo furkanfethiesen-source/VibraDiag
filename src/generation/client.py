@@ -10,6 +10,9 @@ import logging
 import logging
 import os
 from typing import Any
+import re
+import time
+from groq import RateLimitError
 
 from dotenv import load_dotenv
 
@@ -29,7 +32,7 @@ class GroqClient:
         llm_cfg = app_cfg.llm if hasattr(app_cfg, "llm") else {}
 
         provided_cfg = config or llm_cfg
-        self.model = provided_cfg.get("model", "llama-3.3-70b-versatile")
+        self.model = provided_cfg.get("model", "qwen/qwen3.6-27b")
         self.temperature = provided_cfg.get("temperature", 0.3)
         self.max_tokens = provided_cfg.get("max_tokens", 2048)
 
@@ -50,41 +53,21 @@ class GroqClient:
             self._client = Groq(api_key=key)
         return self._client
 
-
     def generate(
         self,
+        messages: list[dict[str, str]] | None = None,
         system_prompt: str | None = None,
         user_message: str | None = None,
-        messages: list[dict[str, str]] | None = None,
         temperature: float | None = None,
         max_tokens: int | None = None,
     ) -> str:
-        """
-        Generate LLM response given system prompt & user message OR a list of messages.
+        """Executes a chat completion call with Groq."""
 
-        Parameters
-        ----------
-        system_prompt : str, optional
-            The system prompt containing guidelines and optional signal context.
-        user_message : str, optional
-            The user query and/or retrieved documentation context.
-        messages : list of dict, optional
-            Full chat history payload [{"role": "...", "content": "..."}, ...]
-        temperature : float, optional
-            Override default temperature.
-        max_tokens : int, optional
-            Override default max tokens.
-
-        Returns
-        -------
-        str
-            Generated text content.
-        """
-        temp = temperature if temperature is not None else self.temperature
-        tokens = max_tokens if max_tokens is not None else self.max_tokens
+        temp = self.temperature if temperature is None else temperature
+        tokens = self.max_tokens if max_tokens is None else max_tokens
 
         if messages is None:
-            sys_p = system_prompt or ""
+            sys_p = system_prompt or "You are a helpful assistant."
             usr_m = user_message or ""
             messages = [
                 {"role": "system", "content": sys_p},
@@ -99,20 +82,18 @@ class GroqClient:
             tokens,
         )
 
-        import time
-        from groq import RateLimitError
-
         max_retries = 3
         for attempt in range(max_retries):
             try:
-                resp = self._client.chat.completions.create(
+                resp = self.client.chat.completions.create(
                     model=self.model,
                     messages=messages,
                     temperature=temp,
                     max_tokens=tokens,
                 )
                 content = resp.choices[0].message.content or ""
-                return content
+                cleaned = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
+                return cleaned or content
             except RateLimitError as rle:
                 logger.warning(f"Groq RateLimit (429) uyarısı (Deneme {attempt + 1}/{max_retries}): 10sn bekleniyor...")
                 if attempt == max_retries - 1:
