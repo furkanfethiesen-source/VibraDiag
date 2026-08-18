@@ -7,7 +7,7 @@ app:
 
 llm:
   provider: "groq"
-  model: "llama-3.3-70b-versatile"
+  model: " openai/gpt-oss-120b"
   temperature: 0.2
   max_tokens: 2048
   timeout: 60
@@ -44,6 +44,11 @@ paths:
   eval_output_dir: "./data/eval_reports"
   text_chunks_json: "./data/processed/text_chunks.json"
   visual_chunks_json: "./data/processed/visual_chunks.json"
+  test_signal_path: "data/signal_test/105.mat"
+  sample_outputs_dir: "sample_outputs"
+  sample_signal_only_json: "sample_outputs/signal_only.json"
+  sample_hybrid_json: "sample_outputs/sample_hybrid.json"
+  sample_rag_only_json: "sample_outputs/sample_rag_only.json"
 
 
 decomposer:
