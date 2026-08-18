@@ -20,6 +20,8 @@ Iki analiz dali icerir:
 Bagimliliklar: numpy, scipy
 """
 
+from typing import Any
+
 import numpy as np
 from scipy.integrate import simpson
 from scipy.signal import butter, sosfiltfilt, hilbert, stft, find_peaks, detrend
@@ -27,14 +29,15 @@ from scipy.signal.windows import hann
 from scipy.stats import kurtosis
 
 
-def select_band(signal: np.ndarray, fs: float, nlevels: int = 5, nperseg: int = 1024):
+def select_band(signal: np.ndarray, fs: float, nlevels: int = 5, nperseg: int = 1024,
+                nyquist_guard_ratio: float = 0.15):
     """
     Spektral kurtosis (kurtogram) kullanarak en darbeli (impulsive) bilginin
     bulundugu frekans bandini otomatik olarak belirler.
 
-    Adim 3.5: bant-ici kurtosis hesabi artik her seviyede TEK bir
-    np.add.reduceat + vektorize kurtosis cagrisi ile yapiliyor (eskiden
-    her bant icin ayri Python dongusu vardi).
+    Kenar artefaktlarini (edge effects) ve Nyquist gecis bolgesindeki sahte yuksek
+    kurtosis tepe noktalarini onlemek icin ust frekans siniri (1 - nyquist_guard_ratio) * Nyquist
+    ile sinirlandirilir.
 
     Returns
     -------
@@ -46,6 +49,8 @@ def select_band(signal: np.ndarray, fs: float, nlevels: int = 5, nperseg: int = 
     freqs, _, Zxx = stft(signal, fs=fs, nperseg=nperseg, noverlap=nperseg // 2)
     magnitude = np.abs(Zxx)
     n_freq_bins = magnitude.shape[0]
+    nyquist = fs / 2.0
+    max_freq_limit = (1.0 - nyquist_guard_ratio) * nyquist
 
     best_kurt = -np.inf
     best_band = (freqs[0], freqs[-1])
@@ -58,7 +63,12 @@ def select_band(signal: np.ndarray, fs: float, nlevels: int = 5, nperseg: int = 
 
         band_sums = np.add.reduceat(magnitude, edges[:-1], axis=0)
         level_kurts = kurtosis(band_sums, axis=1, fisher=True)
-        level_kurts = np.where(band_sizes >= 2, level_kurts, -np.inf)
+
+        for b_idx in range(n_bands):
+            lo, hi = edges[b_idx], edges[b_idx + 1]
+            band_high = freqs[hi - 1] if hi > 0 else 0.0
+            if band_high > max_freq_limit or band_sizes[b_idx] < 2:
+                level_kurts[b_idx] = -np.inf
 
         level_best_idx = int(np.argmax(level_kurts))
         if level_kurts[level_best_idx] > best_kurt:
@@ -126,18 +136,26 @@ def is_kurtogram_reliable(signal: np.ndarray, fs: float, kurtogram: list,
 
 
 def bandpass_filter(signal: np.ndarray, fs: float, band: tuple,
-                    order: int = 4, guard_ratio: float = 0.1):
+                    order: int = 4, guard_ratio: float = 0.02):
     """
     select_band()'in buldugu bandi kullanarak sinyale sifir-fazli
     (zero-phase) IIR (Butterworth) bant geciren filtre uygular.
     """
     nyquist = fs / 2
-    low, high = band
+    low, high = float(band[0]), float(band[1])
 
-    if high >= nyquist:
-        high = nyquist * (1 - guard_ratio)
+    max_safe_high = nyquist * (1.0 - guard_ratio)
+    if high >= max_safe_high:
+        high = max_safe_high
+
     if low <= 0:
         low = 1.0
+
+    if low >= high:
+        low = max(1.0, high - max(50.0, (band[1] - band[0]) * 0.5))
+        if low >= high:
+            low = max(1.0, high * 0.8)
+
     if low >= high:
         raise ValueError(f"Gecersiz bant: alt sinir ({low} Hz) >= ust sinir ({high} Hz)")
 
@@ -218,15 +236,108 @@ def calc_fault_freqs(rpm: float, n_balls: int, ball_diameter: float,
     return {"BPFO": bpfo, "BPFI": bpfi, "BSF": bsf, "FTF": ftf}
 
 
-def _dynamic_tolerance(harmonic, base_tolerance_hz: float, alpha: float):
-    """Tolerance(h) = base * (1 + alpha*(h-1)).
-
-    Skaler ya da numpy array `harmonic` ile calisir (dogal olarak
-    vektorize — Adim 3.5). Ust harmoniklerde STFT bin kaymasi ve hafif
-    RPM dalgalanmasi biriktigi icin sabit tolerans yerine derece ile
-    buyuyen tolerans daha gercekci eslesme saglar.
+def _dynamic_tolerance(
+    harmonic,
+    base_freq: float = 1.0,
+    min_abs_tol_hz: float = 0.5,
+    tolerance_ratio: float = 0.015,
+    alpha: float = 0.10,
+    tolerance_hz: float | None = None,
+):
     """
-    return base_tolerance_hz * (1 + alpha * (np.asarray(harmonic, dtype=float) - 1))
+    Tolerance(h) = max(min_abs_tol_hz, (base_freq * h) * tolerance_ratio) * (1 + alpha * (h - 1)).
+
+    Works with scalar or numpy array `harmonic`.
+    Proportional tolerance prevents over-wide windows for low-frequency faults (FTF ~12 Hz)
+    while maintaining appropriate margins for high-frequency faults (BPFI ~162 Hz).
+    """
+    harm = np.asarray(harmonic, dtype=float)
+    if tolerance_hz is not None and base_freq <= 1.0:
+        base_tol = tolerance_hz
+    else:
+        freq_targets = base_freq * harm
+        base_tol = np.maximum(min_abs_tol_hz, freq_targets * tolerance_ratio)
+
+    return base_tol * (1.0 + alpha * (harm - 1.0))
+
+
+def _get_local_baseline(
+    freqs: np.ndarray,
+    magnitude: np.ndarray,
+    target_freq: float,
+    fr: float = 29.95,
+) -> float:
+    """
+    Calculates a localized noise floor baseline around target_freq.
+    For low-frequency regions (0 - 2.5 * fr), uses the 0.5 Hz - 3.0 * fr window to avoid
+    exaggerated severity scores caused by DC offset and 1X energy leakage.
+    For higher frequencies, uses a localized window [f - 5*fr, f + 5*fr].
+    """
+    if len(magnitude) == 0:
+        return 1.0
+
+    if target_freq <= 2.5 * fr:
+        mask = (freqs >= 0.5) & (freqs <= max(3.0 * fr, 100.0))
+    else:
+        half_win = max(5.0 * fr, 50.0)
+        mask = (freqs >= max(0.5, target_freq - half_win)) & (freqs <= target_freq + half_win)
+
+    sub_mag = magnitude[mask]
+    if len(sub_mag) > 0:
+        pos = sub_mag[sub_mag > 0]
+        if len(pos) > 0:
+            med = float(np.median(pos))
+            if med > 1e-9:
+                return med
+
+    global_pos = magnitude[magnitude > 0]
+    return float(np.median(global_pos)) if len(global_pos) > 0 else 1.0
+
+
+def _check_sidebands(
+    freqs: np.ndarray,
+    magnitude: np.ndarray,
+    peak_freqs: np.ndarray,
+    center_freq: float,
+    fr: float,
+    min_abs_tol_hz: float = 0.5,
+    tolerance_ratio: float = 0.015,
+) -> dict[str, Any]:
+    """
+    Checks for 1X (fr) and 2X (2*fr) modulation sidebands around center_freq (e.g. BPFI +- fr, BPFI +- 2*fr).
+    Returns sideband matching status, matched frequencies, and energy.
+    """
+    sideband_orders = [-2, -1, 1, 2]
+    matched_sidebands = []
+    total_sideband_energy = 0.0
+
+    for order in sideband_orders:
+        sb_target = center_freq + (order * fr)
+        if sb_target < 0.5 or sb_target >= freqs[-1]:
+            continue
+
+        sb_tol = max(min_abs_tol_hz, sb_target * tolerance_ratio)
+        diffs = np.abs(peak_freqs - sb_target)
+        if len(diffs) > 0:
+            min_diff_idx = int(np.argmin(diffs))
+            if diffs[min_diff_idx] <= sb_tol:
+                matched_sb_freq = float(peak_freqs[min_diff_idx])
+                sb_amp = _band_rms_energy(freqs, magnitude, sb_target, sb_tol)
+                matched_sidebands.append({
+                    "order": f"{order:+d}X",
+                    "target_hz": round(sb_target, 2),
+                    "found_hz": round(matched_sb_freq, 2),
+                    "amplitude": round(sb_amp, 4),
+                })
+                total_sideband_energy += sb_amp
+
+    has_sidebands = len(matched_sidebands) >= 1
+    return {
+        "sidebands_detected": has_sidebands,
+        "n_sidebands_matched": len(matched_sidebands),
+        "matched_sidebands": matched_sidebands,
+        "total_sideband_energy": round(total_sideband_energy, 4),
+    }
 
 
 def _parabolic_peak_refine(magnitude: np.ndarray, idx: int, freqs: np.ndarray):
@@ -270,31 +381,29 @@ def _band_rms_energy(freqs: np.ndarray, magnitude: np.ndarray,
 
 def match_peaks(freqs: np.ndarray, magnitude: np.ndarray, fault_freqs: dict,
                 n_harmonics: int = 3, tolerance_hz: float = 2.0,
-                tolerance_alpha: float = 0.15, prominence_ratio: float = 0.05):
+                tolerance_alpha: float = 0.10, prominence_ratio: float = 0.05,
+                fr: float = 29.95, min_abs_tol_hz: float = 0.5,
+                tolerance_ratio: float = 0.015):
     """
-    envelope_fft() spektrumundaki tepe noktalarini calc_fault_freqs()'ten
-    gelen karakteristik frekanslarla (ve harmonikleriyle) eslestirir, her
-    ariza tipi icin bir siddet skoru uretir.
-
-    Bir harmonigin "eslesmis" sayilmasi icin (confidence) hala gercek bir
-    spektral tepe noktasina yakin olmasi gerekiyor (find_peaks); ancak
-    raporlanan genlik/siddet artik o tepenin tek bin'lik degeri degil,
-    dinamik-toleranslu bant icindeki RMS enerjisi (Adim 3.3) ve tepe
-    frekansi parabolik enterpolasyonla rafine edilmis halidir (Adim 3.4).
-    Harmonik dongusu numpy broadcasting ile vektorize edildi (Adim 3.5).
+    Matches envelope spectrum peaks with characteristic bearing fault frequencies (and harmonics).
+    Utilizes proportional dynamic tolerance and localized noise floor baseline calculation.
     """
     min_prominence = magnitude.max() * prominence_ratio
     peak_idx, _ = find_peaks(magnitude, prominence=min_prominence)
     peak_freqs = freqs[peak_idx]
 
     if len(peak_freqs) == 0:
-        return {name: {"severity": 0.0, "matched_harmonics": [], "confidence": 0.0}
-                for name in fault_freqs}
+        return {name: {
+            "severity": 0.0, "matched_harmonics": [], "confidence": 0.0,
+            "sidebands": {"sidebands_detected": False, "n_sidebands_matched": 0, "matched_sidebands": []}
+        } for name in fault_freqs}
 
-    baseline = np.median(magnitude[magnitude > 0])
     results = {}
 
     for fault_name, base_freq in fault_freqs.items():
+        if fault_name == "fr" or base_freq is None:
+            continue
+
         harmonics = np.arange(1, n_harmonics + 1)
         target_freqs = base_freq * harmonics
         valid = target_freqs < freqs[-1]
@@ -303,11 +412,20 @@ def match_peaks(freqs: np.ndarray, magnitude: np.ndarray, fault_freqs: dict,
         matched_harmonics = []
         total_energy = 0.0
 
+        local_baseline = _get_local_baseline(freqs, magnitude, base_freq, fr=fr)
+
         if len(target_freqs) > 0:
             diff_matrix = np.abs(peak_freqs[None, :] - target_freqs[:, None])
             closest_peak_local_idx = np.argmin(diff_matrix, axis=1)
             closest_diffs = diff_matrix[np.arange(len(target_freqs)), closest_peak_local_idx]
-            tolerances = _dynamic_tolerance(harmonics, tolerance_hz, tolerance_alpha)
+            
+            tolerances = _dynamic_tolerance(
+                harmonics,
+                base_freq=base_freq,
+                min_abs_tol_hz=min_abs_tol_hz,
+                tolerance_ratio=tolerance_ratio,
+                alpha=tolerance_alpha,
+            )
 
             for h, target_freq, local_idx, diff, tol in zip(
                 harmonics, target_freqs, closest_peak_local_idx, closest_diffs, tolerances
@@ -326,13 +444,27 @@ def match_peaks(freqs: np.ndarray, magnitude: np.ndarray, fault_freqs: dict,
                     })
                     total_energy += band_amp
 
-        severity = total_energy / baseline if baseline > 0 else 0.0
+        sideband_info = {"sidebands_detected": False, "n_sidebands_matched": 0, "matched_sidebands": []}
+        if fault_name in ("BPFI", "BSF") and len(matched_harmonics) > 0:
+            sideband_info = _check_sidebands(
+                freqs=freqs,
+                magnitude=magnitude,
+                peak_freqs=peak_freqs,
+                center_freq=base_freq,
+                fr=fr,
+                min_abs_tol_hz=min_abs_tol_hz,
+                tolerance_ratio=tolerance_ratio,
+            )
+
+        severity = total_energy / local_baseline if local_baseline > 0 else 0.0
         confidence = len(matched_harmonics) / n_harmonics
 
         results[fault_name] = {
             "severity": round(severity, 2),
             "matched_harmonics": matched_harmonics,
             "confidence": round(confidence, 2),
+            "n_harmonics_matched": len(matched_harmonics),
+            "sidebands": sideband_info,
         }
 
     return results

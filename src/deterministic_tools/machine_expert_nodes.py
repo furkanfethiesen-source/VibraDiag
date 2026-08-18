@@ -8,6 +8,7 @@ from typing import Literal, TypedDict
 import numpy as np
 from langgraph.graph import END, StateGraph
 from scipy.signal.windows import hann
+import scipy.stats
 
 from deterministic_tools.empirical_band_rules import select_band_empirical
 from deterministic_tools.fault_localization import analyze_multichannel, localize_fault
@@ -98,6 +99,20 @@ def rotating_expert_node(state: SignalProcessingInternalState) -> dict:
     localization = localize_fault(channel_analyses)
 
     primary_signal = loaded.channels[state["primary_channel"]]
+
+    peak_val = float(np.max(np.abs(primary_signal)))
+    sig_rms = float(np.sqrt(np.mean(primary_signal**2)))
+    crest_fact = float(peak_val / (sig_rms + 1e-9))
+    sig_kurt = float(scipy.stats.kurtosis(primary_signal, fisher=True))
+
+    time_domain_stats = {
+        "overall_rms": float(state.get("vibration_velocity_rms_mm_s") or sig_rms),
+        "acceleration_rms": sig_rms,
+        "peak_value": peak_val,
+        "crest_factor": crest_fact,
+        "kurtosis": sig_kurt,
+    }
+
     direct_freqs = np.fft.rfftfreq(len(primary_signal), 1 / loaded.fs)
     direct_mag = np.abs(np.fft.rfft(primary_signal * hann(len(primary_signal))))
     fr = state["rpm"] / 60.0
@@ -116,6 +131,7 @@ def rotating_expert_node(state: SignalProcessingInternalState) -> dict:
         "envelope_diagnosis": envelope_diagnosis,
         "fault_localization": localization,
         "direct_spectrum_diagnosis": direct_spectrum_diagnosis,
+        "time_domain_stats": time_domain_stats,
     }
 
 
@@ -126,6 +142,20 @@ def reciprocating_expert_node(state: SignalProcessingInternalState) -> dict:
     primary_channel = "DE" if "DE" in loaded.channels else next(iter(loaded.channels))
     signal = loaded.channels[primary_channel]
 
+    import scipy.stats
+    peak_val = float(np.max(np.abs(signal)))
+    sig_rms = float(np.sqrt(np.mean(signal**2)))
+    crest_fact = float(peak_val / (sig_rms + 1e-9))
+    sig_kurt = float(scipy.stats.kurtosis(signal, fisher=True))
+
+    time_domain_stats = {
+        "overall_rms": float(state.get("vibration_velocity_rms_mm_s") or sig_rms),
+        "acceleration_rms": sig_rms,
+        "peak_value": peak_val,
+        "crest_factor": crest_fact,
+        "kurtosis": sig_kurt,
+    }
+
     direct_freqs = np.fft.rfftfreq(len(signal), 1 / loaded.fs)
     direct_mag = np.abs(np.fft.rfft(signal * hann(len(signal))))
 
@@ -135,7 +165,11 @@ def reciprocating_expert_node(state: SignalProcessingInternalState) -> dict:
         stroke_type=state.get("stroke_type", "4-stroke"),
     )
 
-    return {"primary_channel": primary_channel, "reciprocating_diagnosis": diagnosis}
+    return {
+        "primary_channel": primary_channel,
+        "reciprocating_diagnosis": diagnosis,
+        "time_domain_stats": time_domain_stats,
+    }
 
 
 

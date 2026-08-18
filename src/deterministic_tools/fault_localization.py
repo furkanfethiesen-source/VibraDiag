@@ -78,7 +78,8 @@ class ChannelAnalysis:
 def run_channel_pipeline(signal: np.ndarray, fs: float, fault_freqs: dict,
                         nlevels: int = 5, n_harmonics: int = 3,
                         tolerance_hz: float = 2.0,
-                        override_band: tuple | None = None) -> ChannelAnalysis:
+                        override_band: tuple | None = None,
+                        fr: float = 29.95) -> ChannelAnalysis:
     """Tek bir kanal icin tam zarf-analizi hattini calistirir.
 
     override_band verilirse select_band() (kurtogram) HIC calistirilmaz;
@@ -94,7 +95,8 @@ def run_channel_pipeline(signal: np.ndarray, fs: float, fault_freqs: dict,
     envelope = hilbert_envelope(filtered)
     freqs, magnitude = envelope_fft(envelope, fs)
     results = match_peaks(freqs, magnitude, fault_freqs,
-                        n_harmonics=n_harmonics, tolerance_hz=tolerance_hz)
+                        n_harmonics=n_harmonics, tolerance_hz=tolerance_hz,
+                        fr=fr)
     return ChannelAnalysis(
         channel="",
         band=band,
@@ -116,6 +118,7 @@ def analyze_multichannel(loaded: LoadedSignal, rpm: float, n_balls: int,
 
     override_band verilirse TUM kanallarda ayni bant kullanilir (her
     kanalda ayri kurtogram calismaz) — bkz. run_channel_pipeline."""
+    fr = rpm / 60.0
     fault_freqs = calc_fault_freqs(
         rpm=rpm, n_balls=n_balls, ball_diameter=ball_diameter,
         pitch_diameter=pitch_diameter, contact_angle_deg=contact_angle_deg,
@@ -126,7 +129,7 @@ def analyze_multichannel(loaded: LoadedSignal, rpm: float, n_balls: int,
         analysis = run_channel_pipeline(
             signal, loaded.fs, fault_freqs,
             n_harmonics=n_harmonics, tolerance_hz=tolerance_hz,
-            override_band=override_band,
+            override_band=override_band, fr=fr,
         )
         analysis.channel = channel_name
         results[channel_name] = analysis

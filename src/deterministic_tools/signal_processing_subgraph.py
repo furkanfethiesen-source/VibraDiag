@@ -11,6 +11,7 @@ tanımları `schemas.states` modülünden alınır.
 
 from __future__ import annotations
 
+import json
 import logging
 from typing import Any
 
@@ -41,11 +42,17 @@ def build_signal_processing_subgraph():
     """Tüm sinyal işleme düğümlerini tek bir derlenmiş alt-grafta toplar."""
     graph = StateGraph(SignalProcessingInternalState)
 
-    graph.add_node("iso_check", iso_check_node)
-    graph.add_node("kurtogram", kurtogram_node)
-    graph.add_node("fallback_band", fallback_band_node)
-    graph.add_node("rotating_expert", rotating_expert_node)
-    graph.add_node("reciprocating_expert", reciprocating_expert_node)
+    def _safe_node(fn):
+        def _wrapper(s):
+            res = fn(s)
+            return _sanitize_for_state(res) if res else res
+        return _wrapper
+
+    graph.add_node("iso_check", _safe_node(iso_evaluator_node))
+    graph.add_node("kurtogram", _safe_node(kurtogram_node))
+    graph.add_node("fallback_band", _safe_node(fallback_band_node))
+    graph.add_node("rotating_expert", _safe_node(rotating_expert_node))
+    graph.add_node("reciprocating_expert", _safe_node(reciprocating_expert_node))
 
     graph.set_entry_point("iso_check")
     graph.add_conditional_edges(
@@ -75,6 +82,38 @@ def _get_compiled_subgraph():
     return _COMPILED_SUBGRAPH
 
 
+def _rectangularize_kurtogram(kurtogram: list[Any]) -> list[list[float]]:
+    """
+    Converts a ragged kurtogram decomposition tree into a uniform 2D rectangular matrix
+    by repeating values across the highest resolution level width.
+    """
+    import numpy as np
+    if not kurtogram:
+        return []
+
+    valid_rows = [row for row in kurtogram if hasattr(row, "__len__") and len(row) > 0]
+    if not valid_rows:
+        return []
+
+    max_cols = max(len(row) for row in valid_rows)
+    rect_matrix = []
+    for row in valid_rows:
+        row_arr = np.asarray(row, dtype=float)
+        n = len(row_arr)
+        if n == max_cols:
+            rect_matrix.append(row_arr.tolist())
+        else:
+            rep = max(1, max_cols // n)
+            expanded = np.repeat(row_arr, rep)
+            if len(expanded) < max_cols:
+                expanded = np.pad(expanded, (0, max_cols - len(expanded)), mode="edge")
+            elif len(expanded) > max_cols:
+                expanded = expanded[:max_cols]
+            rect_matrix.append(expanded.tolist())
+
+    return rect_matrix
+
+
 def plot_diagnostics_node(state: dict) -> dict[str, Any]:
     """
     Generate Plotly figures for FFT spectrum and Kurtogram heatmap,
@@ -89,18 +128,15 @@ def plot_diagnostics_node(state: dict) -> dict[str, Any]:
     if isinstance(signal_res, object) and hasattr(signal_res, "model_dump"):
         signal_res = signal_res.model_dump()
 
-    # 1. FFT Spectrum Plot
     freqs = None
     mag = None
 
-    # Check for direct pre-computed fft in raw_results (fallback/mock)
     raw_results = signal_res.get("raw_results", {}) if isinstance(signal_res, dict) else {}
     fft_data = raw_results.get("fft", {}) if isinstance(raw_results, dict) else {}
     if isinstance(fft_data, dict) and "freqs" in fft_data and "magnitude" in fft_data:
         freqs = fft_data["freqs"]
         mag = fft_data["magnitude"]
 
-    # Compute FFT directly from loaded_signal if not pre-computed
     if freqs is None or mag is None:
         loaded = state.get("loaded_signal") or (signal_res.get("loaded_signal") if isinstance(signal_res, dict) else None)
         if loaded and hasattr(loaded, "channels") and loaded.channels:
@@ -133,19 +169,20 @@ def plot_diagnostics_node(state: dict) -> dict[str, Any]:
         )
         plots["fft_spectrum"] = fig_fft.to_dict()
 
-    # 2. Kurtogram Heatmap Plot
-    kurtogram = state.get("kurtogram") or (signal_res.get("kurtogram") if isinstance(signal_res, dict) else None)
-    if kurtogram:
-        fig_kurt = go.Figure(data=go.Heatmap(z=kurtogram, colorscale="Viridis"))
-        fig_kurt.update_layout(
-            title="Spectral Kurtogram Heatmap",
-            xaxis_title="Frekans Bandı İndeksi",
-            yaxis_title="Ayrıştırma Seviyesi (Level)",
-            template="plotly_dark",
-        )
-        plots["kurtogram"] = fig_kurt.to_dict()
+    raw_kurtogram = signal_res.get("kurtogram") if isinstance(signal_res, dict) else None
+    if raw_kurtogram:
+        rect_kurt = _rectangularize_kurtogram(raw_kurtogram)
+        if rect_kurt:
+            fig_kurt = go.Figure(data=go.Heatmap(z=rect_kurt, colorscale="Viridis"))
+            fig_kurt.update_layout(
+                title="Spectral Kurtogram Heatmap",
+                xaxis_title="Frekans Bandı Dağılımı",
+                yaxis_title="Ayrıştırma Seviyesi (Level 1..N)",
+                template="plotly_dark",
+            )
+            plots["kurtogram"] = fig_kurt.to_dict()
 
-    return {"diagnostic_plots": plots}
+    return {"diagnostic_plots": _sanitize_for_state(plots)}
 
 
 _SUBGRAPH_INPUT_KEYS = (
@@ -165,12 +202,43 @@ _SUBGRAPH_INPUT_KEYS = (
 
 def map_parent_to_subgraph(parent_state: VibraDiagMainState) -> SignalProcessingInternalState:
     """VibraDiagMainState -> SignalProcessingInternalState mapping."""
-    return {k: parent_state[k] for k in _SUBGRAPH_INPUT_KEYS if k in parent_state}
+    meta = parent_state.get("machine_metadata") or {}
+    subgraph_input: dict[str, Any] = {}
+    for k in _SUBGRAPH_INPUT_KEYS:
+        if k in parent_state and parent_state[k] is not None:
+            subgraph_input[k] = parent_state[k]
+        elif k in meta and meta[k] is not None:
+            subgraph_input[k] = meta[k]
+    return subgraph_input
+
+
+class SafeJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        import numpy as np
+        if hasattr(obj, "tolist"):
+            return obj.tolist()
+        if hasattr(obj, "item"):
+            return obj.item()
+        if isinstance(obj, (np.floating, float)):
+            return float(obj)
+        if isinstance(obj, (np.integer, int)):
+            return int(obj)
+        if isinstance(obj, (np.bool_, bool)):
+            return bool(obj)
+        if hasattr(obj, "__dict__"):
+            return obj.__dict__
+        return str(obj)
+
+
+def _sanitize_for_state(obj: Any) -> Any:
+    """Recursively converts all objects, numpy types, and dataclasses to msgpack serializable Python primitives."""
+    return json.loads(json.dumps(obj, cls=SafeJSONEncoder))
 
 
 def map_subgraph_to_parent(subgraph_output: dict) -> dict:
     """SignalProcessingInternalState -> VibraDiagMainState mapping."""
-    return {"signal_processing_result": dict(subgraph_output)}
+    sanitized = _sanitize_for_state(dict(subgraph_output))
+    return {"signal_processing_result": sanitized}
 
 
 def signal_processing_subgraph_node(parent_state: VibraDiagMainState) -> dict:
