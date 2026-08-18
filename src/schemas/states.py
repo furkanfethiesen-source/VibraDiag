@@ -24,17 +24,21 @@ class VibraDiagMainState(TypedDict, total=False):
     session_id: str
     user_query: str
     signal_file_path: str | None
+    loaded_signal: LoadedSignal | None
 
     messages: Annotated[list[BaseMessage], add_messages]
 
     machine_metadata: dict[str, Any]
 
     needs_signal_context: bool
-    route_decision: Literal["signal_only", "rag_only", "hybrid", "general_chat", "error"]
+    route_decision: Literal["signal_only", "rag_only", "hybrid", "general_chat", "error", "approved_with_warning"]
 
     signal_analysis: dict[str, Any] | None
     signal_processing_result: dict[str, Any]
     diagnostic_plots: dict[str, dict]
+    time_domain_stats: dict[str, float]
+    primary_fault: str | None
+    primary_fault_data: dict[str, Any]
 
     text_passages: list[dict[str, Any]]
     visual_evidence: list[dict[str, Any]]
@@ -50,6 +54,7 @@ class VibraDiagMainState(TypedDict, total=False):
     previous_failure_reason: str | None
     is_flagged: bool
     flag_reason: str | None
+    checker_results: dict[str, Any]
     corrector_metrics: dict[str, Any]
     corrector_history: list[dict[str, Any]]
 
@@ -78,6 +83,9 @@ class SignalProcessingInternalState(TypedDict, total=False):
     envelope_diagnosis: dict
     fault_localization: dict
     direct_spectrum_diagnosis: dict
+    time_domain_stats: dict[str, float]
+    primary_fault: str | None
+    primary_fault_data: dict[str, Any]
 
     n_cylinders: int
     stroke_type: str
