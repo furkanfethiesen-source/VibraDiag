@@ -25,6 +25,9 @@ from langgraph.graph import END, START, StateGraph
 
 from deterministic_tools.reader import LoadedSignal, SignalReaderFactory
 from deterministic_tools.signal_processing_subgraph import (
+    _get_compiled_subgraph,
+    map_parent_to_subgraph,
+    map_subgraph_to_parent,
     plot_diagnostics_node,
     signal_processing_subgraph_node,
 )
@@ -219,7 +222,8 @@ def signal_loader_node(state: VibraDiagMainState) -> dict[str, Any]:
 
 def signal_dsp_node(state: VibraDiagMainState) -> dict[str, Any]:
     """
-    Executes the isolated SignalProcessingSubGraph.
+    Executes the isolated SignalProcessingSubGraph with ephemeral signal loading,
+    generates interactive diagnostic plots, and keeps parent state lightweight.
     """
     errors = state.get("errors") or []
     if errors:
@@ -228,16 +232,7 @@ def signal_dsp_node(state: VibraDiagMainState) -> dict[str, Any]:
 
     logger.info("Executing SignalProcessingSubGraph node...")
     
-    # Ensure loaded_signal is populated
-    active_state = dict(state)
-    if "loaded_signal" not in active_state or active_state["loaded_signal"] is None:
-        signal_file = active_state.get("signal_file_path")
-        if signal_file:
-            meta = active_state.get("machine_metadata") or {}
-            expected_fs = meta.get("fs") or meta.get("expected_fs")
-            active_state["loaded_signal"] = SignalReaderFactory.load(str(signal_file), expected_fs=expected_fs)
-
-    dsp_output = signal_processing_subgraph_node(active_state)
+    dsp_output = signal_processing_subgraph_node(state)
     sig_res = dsp_output.get("signal_processing_result", {})
     if sig_res:
         from deterministic_tools.fault_analyzer import pick_primary_fault
@@ -256,9 +251,11 @@ def signal_dsp_node(state: VibraDiagMainState) -> dict[str, Any]:
 
 def diagnostic_plots_wrapper_node(state: VibraDiagMainState) -> dict[str, Any]:
     """
-    Generates FFT Spectrum and Kurtogram Heatmap Plotly figures.
+    Ensures diagnostic plots exist on disk and in state.
+    If already generated during signal_dsp_node, returns existing paths.
     """
-    logger.info("Generating diagnostic plots...")
+    if state.get("diagnostic_plots"):
+        return {}
     return plot_diagnostics_node(state)
 
 
