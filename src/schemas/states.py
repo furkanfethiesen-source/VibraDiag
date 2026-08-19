@@ -24,7 +24,6 @@ class VibraDiagMainState(TypedDict, total=False):
     session_id: str
     user_query: str
     signal_file_path: str | None
-    loaded_signal: LoadedSignal | None
 
     messages: Annotated[list[BaseMessage], add_messages]
 
@@ -35,7 +34,7 @@ class VibraDiagMainState(TypedDict, total=False):
 
     signal_analysis: dict[str, Any] | None
     signal_processing_result: dict[str, Any]
-    diagnostic_plots: dict[str, dict]
+    diagnostic_plots: dict[str, Any]
     time_domain_stats: dict[str, float]
     primary_fault: str | None
     primary_fault_data: dict[str, Any]
