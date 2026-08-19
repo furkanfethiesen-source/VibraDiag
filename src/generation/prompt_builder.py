@@ -79,11 +79,18 @@ def build_signal_context(signal_data: dict[str, Any] | None) -> str:
         envelope_diagnosis=signal_data.get("envelope_diagnosis"),
         reciprocating_diagnosis=signal_data.get("reciprocating_diagnosis"),
     )
-    primary_fault = fault_summary.get("primary_fault_name")
+    primary_fault = (
+        signal_data.get("primary_fault")
+        or (signal_data.get("fault_indicators", [{}])[0].get("type") if signal_data.get("fault_indicators") else None)
+        or fault_summary.get("primary_fault_name")
+    )
     if primary_fault:
+        confidence_val = fault_summary.get("confidence", 0.0)
+        if not confidence_val and signal_data.get("fault_indicators"):
+            confidence_val = signal_data["fault_indicators"][0].get("confidence", 0.0)
         lines.append(
             f"- Birincil Tespit Edilen Arıza: **{primary_fault}** "
-            f"(Güven: {fault_summary.get('confidence', 0.0):.2f}, Şiddet Skoru: {fault_summary.get('score', 0.0):.2f})"
+            f"(Güven: {confidence_val:.2f}, Şiddet Skoru: {fault_summary.get('score', 0.0):.2f})"
         )
 
     all_faults = fault_summary.get("all_faults", [])
@@ -108,17 +115,35 @@ def build_signal_context(signal_data: dict[str, Any] | None) -> str:
     direct_diag = signal_data.get("direct_spectrum_diagnosis", {})
     recip_diag = signal_data.get("reciprocating_diagnosis", {})
 
-    if envelope_diag:
-        lines.append("- Rulman Zarf Analizi Teşhisi:")
-        lines.append(f"  {json.dumps(envelope_diag, ensure_ascii=False, indent=2)}")
+    if envelope_diag and isinstance(envelope_diag, dict):
+        lines.append("- Rulman Zarf Analizi Özeti:")
+        for ch, ch_res in envelope_diag.items():
+            if isinstance(ch_res, dict):
+                matched = [
+                    f"{fault_k} (şiddet={fault_v.get('severity', 0):.1f}, güven={fault_v.get('confidence', 0):.2f})"
+                    for fault_k, fault_v in ch_res.items()
+                    if isinstance(fault_v, dict) and fault_v.get("confidence", 0) > 0.3
+                ]
+                if matched:
+                    lines.append(f"  * Kanal {ch}: {', '.join(matched)}")
 
-    if direct_diag:
-        lines.append("- Doğrudan Spektrum Analizi Teşhisi:")
-        lines.append(f"  {json.dumps(direct_diag, ensure_ascii=False, indent=2)}")
+    if direct_diag and isinstance(direct_diag, dict):
+        patterns = [
+            f"{pk} ({pv.get('pattern', '')}, şiddet={pv.get('severity', 'N/A')})"
+            for pk, pv in direct_diag.items()
+            if isinstance(pv, dict) and pv.get("severity") not in (None, "none", "NONE", 0)
+        ]
+        if patterns:
+            lines.append(f"- Doğrudan Spektrum Özeti: {', '.join(patterns)}")
 
-    if recip_diag:
-        lines.append("- Pistonlu Makine Teşhisi:")
-        lines.append(f"  {json.dumps(recip_diag, ensure_ascii=False, indent=2)}")
+    if recip_diag and isinstance(recip_diag, dict):
+        recip_findings = [
+            f"{rk}: {rv.get('status', 'N/A')}"
+            for rk, rv in recip_diag.items()
+            if isinstance(rv, dict) and rv.get("status") not in (None, "normal")
+        ]
+        if recip_findings:
+            lines.append(f"- Pistonlu Makine Özeti: {', '.join(recip_findings)}")
 
     return "\n".join(lines)
 
@@ -155,7 +180,12 @@ def build_initial_signal_query(signal_data: dict[str, Any] | None) -> str:
         envelope_diagnosis=signal_data.get("envelope_diagnosis"),
         reciprocating_diagnosis=signal_data.get("reciprocating_diagnosis"),
     )
-    fault_name = fault_summary.get("primary_fault_name") or "mekanik arıza belirtisi"
+    fault_name = (
+        signal_data.get("primary_fault")
+        or (signal_data.get("fault_indicators", [{}])[0].get("type") if signal_data.get("fault_indicators") else None)
+        or fault_summary.get("primary_fault_name")
+        or "mekanik arıza belirtisi"
+    )
 
     iso_zone = signal_data.get("iso_severity_zone") or signal_data.get("iso_zone") or "N/A"
     iso_meaning = signal_data.get("iso_severity_meaning") or "Belirtilmedi"

@@ -92,8 +92,26 @@ class GroqClient:
                     max_tokens=tokens,
                 )
                 content = resp.choices[0].message.content or ""
-                cleaned = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL).strip()
-                return cleaned or content
+
+                if "<think>" in content:
+                    if "</think>" in content:
+                        parts = content.split("</think>", 1)
+                        cleaned = parts[1].strip()
+                    else:
+                        before_think = content.split("<think>", 1)[0].strip()
+                        if before_think:
+                            cleaned = before_think
+                        else:
+                            quotes = re.findall(r'"([^"\n]{10,200})"', content)
+                            if quotes:
+                                cleaned = quotes[-1]
+                            else:
+                                lines = [ln.strip() for ln in content.replace("<think>", "").split("\n") if ln.strip() and not ln.strip().startswith(("*", "-", "#", "1.", "2.", "3.", "4.", "5."))]
+                                cleaned = lines[-1] if lines else ""
+                else:
+                    cleaned = content.strip()
+
+                return cleaned if cleaned else content.strip()
             except RateLimitError as rle:
                 logger.warning(f"Groq RateLimit (429) uyarısı (Deneme {attempt + 1}/{max_retries}): 10sn bekleniyor...")
                 if attempt == max_retries - 1:
