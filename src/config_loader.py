@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 class AppConfig(BaseModel):
     app: Dict[str, Any]
+    api: Dict[str, Any] = {}
     llm: Dict[str, Any]
     embeddings: Dict[str, Any]
     streamlit: Dict[str, Any]
