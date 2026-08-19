@@ -5,11 +5,26 @@ app:
   description: "Vibration Analysis and Fault Diagnosis System"
   debug: false
 
+api:
+  host: "0.0.0.0"
+  port: 8000
+  reload: true
+  title: "VibraDiag Fault Diagnosis API"
+  version: "0.1.0"
+  description: "Vibration Analysis, Signal Processing & Fault Diagnosis REST and SSE API"
+  cors_origins: ["*"]
+  max_upload_size_mb: 50
+  upload_dir: "./data/uploads"
+  checkpointer_type: "sqlite"  
+  sqlite_db_path: "./data/sessions.db"
+  plot_format_default: "json"  
+
+
 llm:
   provider: "groq"
-  model: " openai/gpt-oss-120b"
+  model: "qwen/qwen3.6-27b"
   temperature: 0.2
-  max_tokens: 2048
+  max_tokens: 1024
   timeout: 60
 
 embeddings:
