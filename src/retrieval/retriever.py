@@ -37,7 +37,7 @@ class TextRetriever:
     """
 
     TECHNICAL_PATTERN = re.compile(
-        r"\b(?:ISO|VDI|IRD|DIN)\s*\d+.*\b|\b(?:BPFO|BPFI|BSF|FTF|VPF|RMS|FFT|HFD)\b|\b\d+(?:\.\d+)?X\b|\b[NTf]\b",
+        r"\b(?:ISO|VDI|IRD|DIN)\s*\d+.*\b|\b(?:BPFO|BPFI|BSF|FTF|VPF|RMS|FFT|HFD)\b|\b\d+(?:\.\d+)?X\b|\b[N]\b",
         re.IGNORECASE,
     )
 
