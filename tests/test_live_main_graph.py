@@ -64,7 +64,7 @@ def save_interactive_plots(
     prefix: str = "signal_only",
 ) -> dict[str, str]:
     """
-    Saves Plotly dictionary figures as standalone interactive HTML files.
+    Extracts or saves Plotly interactive HTML files, returning relative paths.
     """
     if not plots_dict:
         logger.warning("No diagnostic plots found in state to save.")
@@ -72,19 +72,25 @@ def save_interactive_plots(
 
     saved_files = {}
 
-    for plot_name, fig_data in plots_dict.items():
-        if not isinstance(fig_data, dict):
-            continue
-
-        try:
-            fig = go.Figure(fig_data)
-            html_filename = f"{prefix}_{plot_name}.html"
-            html_path = output_dir / html_filename
-            fig.write_html(str(html_path), include_plotlyjs="cdn")
-            logger.info("Saved interactive plot: %s", html_path)
-            saved_files[f"{plot_name}_html"] = str(html_path.relative_to(PROJECT_ROOT))
-        except Exception as e:
-            logger.error("Failed to save plot '%s': %s", plot_name, e)
+    for plot_name, plot_val in plots_dict.items():
+        if isinstance(plot_val, (str, Path)):
+            p = Path(plot_val)
+            if p.exists():
+                try:
+                    rel_path = str(p.relative_to(PROJECT_ROOT))
+                except ValueError:
+                    rel_path = str(p)
+                saved_files[f"{plot_name}_html" if not plot_name.endswith("_html") and not plot_name.endswith("_path") else plot_name] = rel_path
+        elif isinstance(plot_val, dict):
+            try:
+                fig = go.Figure(plot_val)
+                html_filename = f"{prefix}_{plot_name}.html"
+                html_path = output_dir / html_filename
+                fig.write_html(str(html_path), include_plotlyjs="cdn")
+                logger.info("Saved interactive plot: %s", html_path)
+                saved_files[f"{plot_name}_html"] = str(html_path.relative_to(PROJECT_ROOT))
+            except Exception as e:
+                logger.error("Failed to save plot '%s': %s", plot_name, e)
 
     return saved_files
 
