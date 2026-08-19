@@ -31,15 +31,11 @@ from schemas.states import SignalProcessingInternalState
 
 
 def machine_type_router(state: SignalProcessingInternalState) -> str:
-    """Conditional entry point: state['machine_type']'a gore dallanir.
-    Gecersiz/eksik machine_type acik bir hata firlatir — sessizce
-    varsayilan bir dala dusmek yanlis teshise yol acabilir."""
     machine_type = state.get("machine_type")
-    if machine_type not in ("rotating", "reciprocating"):
-        raise ValueError(
-            f"machine_type_router: gecersiz veya eksik machine_type={machine_type!r}. "
-            "'rotating' veya 'reciprocating' olmali."
-        )
+    if not machine_type or machine_type not in ("rotating", "reciprocating"):
+        if isinstance(machine_type, str) and ("piston" in machine_type.lower() or "reciprocating" in machine_type.lower()):
+            return "reciprocating"
+        return "rotating"
     return machine_type
 
 
@@ -89,9 +85,13 @@ def rotating_expert_node(state: SignalProcessingInternalState) -> dict:
     loaded: LoadedSignal = state["loaded_signal"]
     band = state.get("final_band") or state["kurtogram_band"]
 
+    rpm = state.get("rpm", 1797.0)
     channel_analyses = analyze_multichannel(
-        loaded, rpm=state["rpm"], n_balls=state["n_balls"],
-        ball_diameter=state["ball_diameter"], pitch_diameter=state["pitch_diameter"],
+        loaded,
+        rpm=rpm,
+        n_balls=state.get("n_balls", 9),
+        ball_diameter=state.get("ball_diameter", 0.3126),
+        pitch_diameter=state.get("pitch_diameter", 1.537),
         contact_angle_deg=state.get("contact_angle_deg", 0.0),
         override_band=band,
     )

@@ -16,6 +16,12 @@ import logging
 from typing import Any
 
 from langgraph.graph import END, StateGraph
+from pathlib import Path
+import numpy as np
+import plotly.graph_objects as go
+from scipy.signal.windows import hann
+
+from config_loader import load_appcfg
 
 from deterministic_tools.ıso_evaluator import iso_evaluator_node
 from deterministic_tools.machine_expert_nodes import (
@@ -33,9 +39,28 @@ logger = logging.getLogger(__name__)
 
 def iso_check_node(state: SignalProcessingInternalState) -> dict:
     """ISO değerlendirmesi için gerekli alanlar mevcutsa evaluator'ı çalıştırır."""
-    if "vibration_velocity_rms_mm_s" not in state or "machine_class" not in state:
+    machine_class = state.get("machine_class")
+    if not machine_class:
         return {}
-    return iso_evaluator_node(state)
+
+    rms = state.get("vibration_velocity_rms_mm_s")
+    if rms is None:
+        loaded = state.get("loaded_signal")
+        if loaded and hasattr(loaded, "channels") and loaded.channels:
+            import numpy as np
+            primary_ch = state.get("primary_channel") or ("DE" if "DE" in loaded.channels else next(iter(loaded.channels)))
+            sig = loaded.channels.get(primary_ch)
+            if sig is not None and len(sig) > 0:
+                rms = float(np.sqrt(np.mean(sig**2)))
+
+    if rms is None:
+        return {}
+
+    eval_state = dict(state)
+    eval_state["vibration_velocity_rms_mm_s"] = rms
+    res = iso_evaluator_node(eval_state)
+    res["vibration_velocity_rms_mm_s"] = rms
+    return res
 
 
 def build_signal_processing_subgraph():
@@ -48,7 +73,7 @@ def build_signal_processing_subgraph():
             return _sanitize_for_state(res) if res else res
         return _wrapper
 
-    graph.add_node("iso_check", _safe_node(iso_evaluator_node))
+    graph.add_node("iso_check", _safe_node(iso_check_node))
     graph.add_node("kurtogram", _safe_node(kurtogram_node))
     graph.add_node("fallback_band", _safe_node(fallback_band_node))
     graph.add_node("rotating_expert", _safe_node(rotating_expert_node))
@@ -117,11 +142,19 @@ def _rectangularize_kurtogram(kurtogram: list[Any]) -> list[list[float]]:
 def plot_diagnostics_node(state: dict) -> dict[str, Any]:
     """
     Generate Plotly figures for FFT spectrum and Kurtogram heatmap,
-    storing them as serialized dictionaries in state['diagnostic_plots'].
+    save them as standalone interactive HTML files on disk, and store
+    lightweight file paths in state['diagnostic_plots'].
     """
-    import numpy as np
-    import plotly.graph_objects as go
-    from scipy.signal.windows import hann
+
+
+    app_cfg = load_appcfg()
+    paths_cfg = getattr(app_cfg, "paths", {}) or {}
+    output_dir_str = paths_cfg.get("sample_outputs_dir", "sample_outputs")
+    output_dir = Path(output_dir_str)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    session_id = state.get("session_id") or state.get("route_decision") or "signal_only"
+    clean_prefix = "".join(c if c.isalnum() or c in ("-", "_") else "_" for c in session_id)
 
     plots = {}
     signal_res = state.get("signal_processing_result") or state.get("signal_analysis", {})
@@ -139,6 +172,17 @@ def plot_diagnostics_node(state: dict) -> dict[str, Any]:
 
     if freqs is None or mag is None:
         loaded = state.get("loaded_signal") or (signal_res.get("loaded_signal") if isinstance(signal_res, dict) else None)
+        if not loaded:
+            signal_file = state.get("signal_file_path")
+            if signal_file and Path(str(signal_file)).exists():
+                from deterministic_tools.reader import SignalReaderFactory
+                meta = state.get("machine_metadata") or {}
+                expected_fs = meta.get("fs") or meta.get("expected_fs")
+                try:
+                    loaded = SignalReaderFactory.load(str(signal_file), expected_fs=expected_fs)
+                except Exception as e:
+                    logger.warning("plot_diagnostics_node could not load signal '%s': %s", signal_file, e)
+
         if loaded and hasattr(loaded, "channels") and loaded.channels:
             primary_ch = (
                 state.get("primary_channel")
@@ -153,23 +197,31 @@ def plot_diagnostics_node(state: dict) -> dict[str, Any]:
                 freqs = np.fft.rfftfreq(n, d=1.0 / fs)
                 mag = np.abs(np.fft.rfft(signal_data * window))
 
+    fft_html_path_str = None
     if freqs is not None and mag is not None:
-        if hasattr(freqs, "tolist"):
-            freqs = freqs.tolist()
-        if hasattr(mag, "tolist"):
-            mag = mag.tolist()
+        freqs_arr = np.asarray(freqs)
+        mag_arr = np.asarray(mag)
+        if len(freqs_arr) > 4000:
+            step = int(np.ceil(len(freqs_arr) / 4000))
+            freqs_arr = freqs_arr[::step]
+            mag_arr = mag_arr[::step]
 
         fig_fft = go.Figure()
-        fig_fft.add_trace(go.Scatter(x=freqs, y=mag, mode="lines", name="FFT Spektrumu", line=dict(color="#1f77b4")))
+        fig_fft.add_trace(go.Scatter(x=freqs_arr.tolist(), y=mag_arr.tolist(), mode="lines", name="FFT Spektrumu", line=dict(color="#1f77b4")))
         fig_fft.update_layout(
             title="Titreşim Sinyali FFT Spektrumu",
             xaxis_title="Frekans (Hz)",
             yaxis_title="Genlik",
             template="plotly_dark",
         )
-        plots["fft_spectrum"] = fig_fft.to_dict()
+        fft_path = output_dir / f"{clean_prefix}_fft_spectrum.html"
+        fig_fft.write_html(str(fft_path), include_plotlyjs="cdn")
+        fft_html_path_str = str(fft_path)
+        plots["fft_spectrum"] = fft_html_path_str
+        plots["fft_spectrum_path"] = fft_html_path_str
 
-    raw_kurtogram = signal_res.get("kurtogram") if isinstance(signal_res, dict) else None
+    kurt_html_path_str = None
+    raw_kurtogram = state.get("kurtogram") or (signal_res.get("kurtogram") if isinstance(signal_res, dict) else None)
     if raw_kurtogram:
         rect_kurt = _rectangularize_kurtogram(raw_kurtogram)
         if rect_kurt:
@@ -180,7 +232,11 @@ def plot_diagnostics_node(state: dict) -> dict[str, Any]:
                 yaxis_title="Ayrıştırma Seviyesi (Level 1..N)",
                 template="plotly_dark",
             )
-            plots["kurtogram"] = fig_kurt.to_dict()
+            kurt_path = output_dir / f"{clean_prefix}_kurtogram.html"
+            fig_kurt.write_html(str(kurt_path), include_plotlyjs="cdn")
+            kurt_html_path_str = str(kurt_path)
+            plots["kurtogram"] = kurt_html_path_str
+            plots["kurtogram_path"] = kurt_html_path_str
 
     return {"diagnostic_plots": _sanitize_for_state(plots)}
 
@@ -188,6 +244,7 @@ def plot_diagnostics_node(state: dict) -> dict[str, Any]:
 _SUBGRAPH_INPUT_KEYS = (
     "machine_type",
     "loaded_signal",
+    "signal_file_path",
     "rpm",
     "n_balls",
     "ball_diameter",
@@ -237,16 +294,49 @@ def _sanitize_for_state(obj: Any) -> Any:
 
 def map_subgraph_to_parent(subgraph_output: dict) -> dict:
     """SignalProcessingInternalState -> VibraDiagMainState mapping."""
-    sanitized = _sanitize_for_state(dict(subgraph_output))
+    raw_dict = dict(subgraph_output)
+    # Remove raw loaded_signal and raw kurtogram decomposition matrix to keep parent state lightweight
+    raw_dict.pop("loaded_signal", None)
+    raw_dict.pop("kurtogram", None)
+    sanitized = _sanitize_for_state(raw_dict)
     return {"signal_processing_result": sanitized}
 
 
 def signal_processing_subgraph_node(parent_state: VibraDiagMainState) -> dict:
     """Ana grafa tek bir node olarak eklenecek wrapper fonksiyon."""
     subgraph_input = map_parent_to_subgraph(parent_state)
-    subgraph = _get_compiled_subgraph()
-    subgraph_output = subgraph.invoke(subgraph_input)
-    return map_subgraph_to_parent(subgraph_output)
+    if "loaded_signal" not in subgraph_input or subgraph_input["loaded_signal"] is None:
+        signal_file = parent_state.get("signal_file_path")
+        if signal_file:
+            from deterministic_tools.reader import SignalReaderFactory
+            meta = parent_state.get("machine_metadata") or {}
+            expected_fs = meta.get("fs") or meta.get("expected_fs")
+            subgraph_input["loaded_signal"] = SignalReaderFactory.load(str(signal_file), expected_fs=expected_fs)
+
+    state = dict(subgraph_input)
+    iso_res = iso_check_node(state)
+    state.update(iso_res)
+
+    mtype = machine_type_router(state)
+    if mtype == "rotating":
+        kurt_res = kurtogram_node(state)
+        state.update(kurt_res)
+
+        if not state.get("kurtogram_reliable"):
+            fallback_res = fallback_band_node(state)
+            state.update(fallback_res)
+
+        rot_res = rotating_expert_node(state)
+        state.update(rot_res)
+    else:
+        recip_res = reciprocating_expert_node(state)
+        state.update(recip_res)
+
+    plots_res = plot_diagnostics_node(state)
+
+    dsp_output = map_subgraph_to_parent(state)
+    dsp_output.update(plots_res)
+    return dsp_output
 
 
 def iso_zone_router(parent_state: VibraDiagMainState) -> str:

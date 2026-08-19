@@ -86,7 +86,7 @@ def normalize_machine_class(user_input) -> str:
     if isinstance(user_input, int):
         arabic = user_input
     else:
-        s = str(user_input).strip().upper().replace("CLASS", "").strip()
+        s = str(user_input).strip().upper().replace("_", " ").replace("-", " ").replace("CLASS", "").strip()
         if s.isdigit():
             arabic = int(s)
         elif s in _ROMAN_TO_ARABIC:
