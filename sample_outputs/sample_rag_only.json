@@ -1,0 +1,41 @@
+{
+  "mode": "rag_only",
+  "user_query": "ISO 10816 standartlarına göre Class II makinelerde Zone C titreşim şiddeti ne anlama gelir?",
+  "generated_answer": "[⚠️ Düşük Güven Uyarısı: Bu yanıt maksimum doğrulama sınırına ulaşmıştır.]\n\nSağlanan dokümantasyon bağlamı yalnızca çift kanal titreşim ölçümü ve orbit (yörünge) analiz tekniklerini içermektedir. ISO 10816 standartları, makine sınıflandırması (Class II) veya Zone C titreşim şiddeti tanımları hakkında herhangi bir veri barındırmamaktadır. \n\nBu bağlamda bu soru için yeterli bilgi bulunmamaktadır.",
+  "retrieved_chunks": {
+    "text_passages": [
+      {
+        "id": "text_parent_43_child_0",
+        "text": "Dual channel analysis requires simultaneous sampling of two channels. A single channel analyzer \ncan only accept an input from one accelerometer at a time, whereas a dual channel instrument can \naccept inputs from two accelerometers simultaneously from different locations on the machine. \nThus, two vibration waveforms can be collected from a machine and analyzed. This can provide \nvery meaningful vibration data. The biggest advantage is that there is no need for reference marks \non the shaft. As a result, there is no need to shut down the machine to provide the marks. The \nphase differences obtained are very accurate. It can provide phase differences at any frequency.\n\n6.2.1 Orbit Analysis\n\nAs described in sec. 3.5, orbits are Lissajous patterns of time domain signals that are \nsimultaneously plotted in the X–Y coordinate plane of an oscilloscope or vibration analyzer. In \nmost applications, the unit of measurement is displacement which is measured directly using \nproximity probes 90 apart as shown in Figure 6.3. These types of measurements are relative \nvibration readings. Relative readings are considered vibration measurements of the shaft with \nrespect to the bearing housing.\n\nFigure 6.3 Orientation of Proximity Probes\n\nThe slight elliptical shape of the 1X orbit plot shown in Figure 6.4 shows a small unbalance \ncondition. In this case, a 1X filter was applied to the measurement for isolating potential running \nspeed related issues. It is important to note, however, that other non-1X related frequencies may be \npresent which are missed if a filtered orbit is used.\n\nCh2\n3.12\n\nCh1\n\n3.12\n\nUnit: Mils\n\nFigure 6.4 Orbit for Unbalance Condition\n\nInner loops presented in a Lissajous orbit plot can indicate a \"hit and bounce\" type condition. This \nphenomenon occurs when the shaft comes in contact with the bearing surface and \"bounces\" off. \nIn early stages of contact, a \"flat\" spot in the orbit plot will be presented. As the condition becomes \nmore severe, the number of loops present will increase and become tighter. Detailed analysis of the\n\n59\n\norbit plot can indicate exactly where the shaft is coming into contact with the bearing in question. \nFigure 6.5 shows a \"non-filtered\" orbit plot of the same shaft as discussed above.\n\nCh2\n2.32\n\nCh1\n\n2.32\n\nUnit: Mils\n\nFigure 6.5 Hit and Bounce Orbit Analysis\n\nMisalignment tends to add significant levels of vibration to the shaft at 1X, but also at higher \norders of running speed. 1X component from misalignment will not be in phase with the unbalance \ncomponent. The effect is to make the orbit plot less circular and more elliptical or even non-\nelliptical (i.e., banana-shape or figure-eight pattern). See Figure 6.6. Resonance and excessive \nbearing wear also tend to produce elliptical orbits. If the contribution is due to resonance, this \ncondition can be pinpointed if the orbit changes noticeably with changes in running speed.\n\nCh2\n4.22\n\nCh1\n\n4.22\n\nUnit: Mils\n\nFigure 6.6 Typical Orbit for Misalignment Condition\n\nMechanical looseness caused by excessive wear tends to produce an orbit similar to that of a rub. \nSubsynchronous effects show up as secondary loops. However, in this case, shaft movement may \nbe in a forward direction, rather than the reverse direction that is typical of a rub. Figure 6.7 shows \na typical Orbit Plot in the Emonitor. See the Emonitor online help for more information.\n\nFigure 6.7 Orbit for Mechanical Looseness Condition\n\n60\n\n6.2.2 Relative Phase Measurement",
+        "metadata": {
+          "parent_id": "text_parent_43",
+          "page_number": 59,
+          "section_path": "6.2 Dual and Multi-Channel Analysis",
+          "content_type": "text"
+        },
+        "score": 0.5314988404905623
+      }
+    ],
+    "visual_evidence": []
+  },
+  "detected_metadata": {
+    "route_decision": "approved_with_warning",
+    "self_corrector_decision": "approved_with_warning",
+    "flag_reason": "Düzeltme döngüsü maksimum deneme sınırına ulaştı (Sistem güvenli çıkış yaptı).",
+    "is_flagged": true,
+    "checker_results": [
+      {
+        "cycle": 4,
+        "decision": "approved_with_warning",
+        "reason": "Düzeltme döngüsü maksimum deneme sınırına ulaştı (Sistem güvenli çıkış yaptı)."
+      }
+    ],
+    "corrector_metrics": {
+      "tokens_input": 5957,
+      "tokens_output": 1972,
+      "total_tokens": 7929,
+      "estimated_cost_usd": 0.001901,
+      "llm_calls": 8
+    }
+  }
+}

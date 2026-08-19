@@ -1,0 +1,1082 @@
+{
+  "mode": "signal_only",
+  "source_path": "data/signal_test/105.mat",
+  "generated_answer": "[⚠️ Düşük Güven Uyarısı: Bu yanıt maksimum doğrulama sınırına ulaşmıştır.]\n\n<think>\nHere's a thinking process:\n\n1.  **Analyze User Input:**\n   - **Machine:** CWRU Test Rig 12k DE\n   - **Fault Detected:** Inner Race Defect (BPFI) [DE]\n   - **ISO Severity Assessment:** Zone C (Just Tolerable)\n   - **Vibration Metrics:** RMS: 4.250 mm/s, Peak: 1.726, Crest Factor: 5.93, Kurtosis: 2.40\n   - **Request:** Explain the fault technically in detail, list possible root causes, and detail urgent intervention and preventive maintenance steps.\n\n2.  **Check Constraints & Rules:**\n   - *Rule 1:* ONLY use provided documentation context. Do NOT add external info.\n   - *Rule 2:* Technical but understandable, avoid unnecessary jargon.\n   - *Rule 3:* Mention ISO standards if possible (ISO 10816/20816).\n   - *Rule 4:* Use order notation (1X, 2X) for frequency components.\n   - *Rule 5:* If context lacks info, explicitly state it.\n   - *Rule 6:* Answer in Turkish.\n   - *Special Instructions:* Cross-check signal analysis with book info, interpret severity/confidence, explain ISO zone, detail frequency components vs fault type, highlight urgent interventions.\n   - *Self-Correction Guidance:* Previous output incorrectly stated Zone A when DSP said Zone C. Must ensure 100% consistency with Zone C.\n\n3.  **Analyze Provided Context (Documentation):**\n   - Covers rolling element bearing structure (inner/outer races, cage, rolling elements).\n   - Defects cause high-frequency vibrations. Severity changes vibration pattern.\n   - Formulas for BPFI, BPFO, FTF, BSF.\n   - Bearing deterioration progresses through 4 stages:\n     - Stage 1: High-frequency/ultrasonic (2-60 kHz), no visible defects, dull gray raceways. HFD techniques used.\n     - Stage 2: Minute pits develop, ringing/natural frequencies (30-120 kcpm / 500-2000 Hz), sidebands may appear. HFD amplitude doubles.\n     - Stage 3: Discrete bearing frequencies and harmonics visible in FFT, sidebands present. Wear visible, pits grow. HFD doubles again. *Advised to replace bearing at this stage.* Remaining life: 1h to 1% of average life.\n     - Stage 4: Pits merge, rough tracks/spalling, severely damaged. 1X RPM amplitude rises, harmonics grow. Discrete frequencies merge into broadband high-frequency noise.\n   - FFT spectrum zones: A (rpm & harmonics), B (bearing defect freq 5-30 kcpm), C (bearing component natural freq 30-120 kcpm), D (HFD >120 kcpm/20kHz).\n   - *Note on ISO Zones:* The context mentions FFT zones A, B, C, D for frequency ranges, NOT ISO severity zones. The prompt mentions \"ISO Şiddet Değerlendirmesi: Bölge C (Just Tolerable)\". I need to address this carefully. The context doesn't explicitly define ISO 10816/20816 severity zones (A, B, C, D for machine condition), but it does define FFT frequency zones. I must stick to the context. I will clarify that the provided context defines frequency zones (A-D) for bearing defect progression, while the ISO severity assessment (Zone C - Just Tolerable) indicates the machine's overall vibration severity level per ISO standards. I will explicitly state what the context says about bearing stages and link it to the metrics/fault.\n   - *Metrics in prompt:* RMS 4.250 mm/s, Peak 1.726, Crest Factor 5.93, Kurtosis 2.40. Context doesn't give specific threshold values for these, but discusses how vibration patterns change with severity. I will interpret them based on general vibration analysis principles *only if* they align with the context's description of stages, but I must be careful not to invent thresholds. I'll focus on what the context says about stages and frequencies.\n   - *Fault:* BPFI (Inner Race). Context says BPFI formula and that defects in raceways are easily detected. Stage 3 mentions discrete bearing frequencies and harmonics with sidebands, advising replacement.\n   - *Self-Correction Note:* Must explicitly state ISO Zone C (Just Tolerable) as given, and align with context's stage descriptions. The context's \"Zone C\" refers to frequency range (30-120",
+  "detected_metadata": {
+    "route_decision": "approved_with_warning",
+    "auto_generated_query": "CWRU Test Rig 12k DE makinesinin Ölçüm Noktası bölgesinde İç Bilezik Arızası (BPFI) [DE] tespiti yapılmıştır.\nISO Şiddet Değerlendirmesi: Bölge C (Just Tolerable).\nTitreşim Metrikleri: RMS 4.250 mm/s, Peak 1.726, Crest Factor 5.93, Kurtosis 2.40.\n\nBu hatayı teknik olarak detaylıca açıkla, olası kök nedenleri sırala ve bu durum için yapılması gereken acil müdahale ile önleyici bakım adımlarını detaylandır.",
+    "primary_fault": "İç Bilezik Arızası (BPFI) [DE]",
+    "primary_fault_data": {
+      "primary_fault_name": "İç Bilezik Arızası (BPFI) [DE]",
+      "fault_type_abbr": "BPFI",
+      "confidence": 1.0,
+      "severity": 61.94,
+      "score": 21.75,
+      "category": "envelope",
+      "sidebands_detected": true,
+      "all_faults": [
+        {
+          "name": "İç Bilezik Arızası (BPFI) [DE]",
+          "abbr": "BPFI",
+          "confidence": 1.0,
+          "severity": 61.94,
+          "score": 21.75,
+          "category": "envelope",
+          "channel": "DE",
+          "n_harmonics_matched": 3,
+          "sidebands_detected": true,
+          "sidebands": {
+            "sidebands_detected": true,
+            "n_sidebands_matched": 4,
+            "matched_sidebands": [
+              {
+                "order": "-2X",
+                "target_hz": 102.29,
+                "found_hz": 101.83,
+                "amplitude": 0.0171
+              },
+              {
+                "order": "-1X",
+                "target_hz": 132.24,
+                "found_hz": 131.71,
+                "amplitude": 0.0051
+              },
+              {
+                "order": "+1X",
+                "target_hz": 192.14,
+                "found_hz": 191.58,
+                "amplitude": 0.0021
+              },
+              {
+                "order": "+2X",
+                "target_hz": 222.09,
+                "found_hz": 221.56,
+                "amplitude": 0.0069
+              }
+            ],
+            "total_sideband_energy": 0.0312
+          },
+          "details": {
+            "severity": 61.94,
+            "matched_harmonics": [
+              {
+                "harmonic": 1,
+                "target_hz": 162.19,
+                "found_hz": 161.69,
+                "tolerance_hz": 2.43,
+                "amplitude": 0.0365
+              },
+              {
+                "harmonic": 2,
+                "target_hz": 324.37,
+                "found_hz": 323.37,
+                "tolerance_hz": 5.35,
+                "amplitude": 0.0068
+              },
+              {
+                "harmonic": 3,
+                "target_hz": 486.56,
+                "found_hz": 485.05,
+                "tolerance_hz": 8.76,
+                "amplitude": 0.0037
+              }
+            ],
+            "confidence": 1.0,
+            "n_harmonics_matched": 3,
+            "sidebands": {
+              "sidebands_detected": true,
+              "n_sidebands_matched": 4,
+              "matched_sidebands": [
+                {
+                  "order": "-2X",
+                  "target_hz": 102.29,
+                  "found_hz": 101.83,
+                  "amplitude": 0.0171
+                },
+                {
+                  "order": "-1X",
+                  "target_hz": 132.24,
+                  "found_hz": 131.71,
+                  "amplitude": 0.0051
+                },
+                {
+                  "order": "+1X",
+                  "target_hz": 192.14,
+                  "found_hz": 191.58,
+                  "amplitude": 0.0021
+                },
+                {
+                  "order": "+2X",
+                  "target_hz": 222.09,
+                  "found_hz": 221.56,
+                  "amplitude": 0.0069
+                }
+              ],
+              "total_sideband_energy": 0.0312
+            }
+          }
+        },
+        {
+          "name": "İç Bilezik Arızası (BPFI) [FE]",
+          "abbr": "BPFI",
+          "confidence": 1.0,
+          "severity": 51.68,
+          "score": 21.75,
+          "category": "envelope",
+          "channel": "FE",
+          "n_harmonics_matched": 3,
+          "sidebands_detected": true,
+          "sidebands": {
+            "sidebands_detected": true,
+            "n_sidebands_matched": 4,
+            "matched_sidebands": [
+              {
+                "order": "-2X",
+                "target_hz": 102.29,
+                "found_hz": 101.83,
+                "amplitude": 0.0076
+              },
+              {
+                "order": "-1X",
+                "target_hz": 132.24,
+                "found_hz": 131.71,
+                "amplitude": 0.0025
+              },
+              {
+                "order": "+1X",
+                "target_hz": 192.14,
+                "found_hz": 191.58,
+                "amplitude": 0.0028
+              },
+              {
+                "order": "+2X",
+                "target_hz": 222.09,
+                "found_hz": 221.56,
+                "amplitude": 0.0033
+              }
+            ],
+            "total_sideband_energy": 0.0162
+          },
+          "details": {
+            "severity": 51.68,
+            "matched_harmonics": [
+              {
+                "harmonic": 1,
+                "target_hz": 162.19,
+                "found_hz": 161.69,
+                "tolerance_hz": 2.43,
+                "amplitude": 0.015
+              },
+              {
+                "harmonic": 2,
+                "target_hz": 324.37,
+                "found_hz": 323.37,
+                "tolerance_hz": 5.35,
+                "amplitude": 0.0032
+              },
+              {
+                "harmonic": 3,
+                "target_hz": 486.56,
+                "found_hz": 485.05,
+                "tolerance_hz": 8.76,
+                "amplitude": 0.0043
+              }
+            ],
+            "confidence": 1.0,
+            "n_harmonics_matched": 3,
+            "sidebands": {
+              "sidebands_detected": true,
+              "n_sidebands_matched": 4,
+              "matched_sidebands": [
+                {
+                  "order": "-2X",
+                  "target_hz": 102.29,
+                  "found_hz": 101.83,
+                  "amplitude": 0.0076
+                },
+                {
+                  "order": "-1X",
+                  "target_hz": 132.24,
+                  "found_hz": 131.71,
+                  "amplitude": 0.0025
+                },
+                {
+                  "order": "+1X",
+                  "target_hz": 192.14,
+                  "found_hz": 191.58,
+                  "amplitude": 0.0028
+                },
+                {
+                  "order": "+2X",
+                  "target_hz": 222.09,
+                  "found_hz": 221.56,
+                  "amplitude": 0.0033
+                }
+              ],
+              "total_sideband_energy": 0.0162
+            }
+          }
+        },
+        {
+          "name": "İç Bilezik Arızası (BPFI) [BA]",
+          "abbr": "BPFI",
+          "confidence": 1.0,
+          "severity": 29.53,
+          "score": 21.75,
+          "category": "envelope",
+          "channel": "BA",
+          "n_harmonics_matched": 3,
+          "sidebands_detected": true,
+          "sidebands": {
+            "sidebands_detected": true,
+            "n_sidebands_matched": 4,
+            "matched_sidebands": [
+              {
+                "order": "-2X",
+                "target_hz": 102.29,
+                "found_hz": 101.83,
+                "amplitude": 0.0031
+              },
+              {
+                "order": "-1X",
+                "target_hz": 132.24,
+                "found_hz": 131.71,
+                "amplitude": 0.0008
+              },
+              {
+                "order": "+1X",
+                "target_hz": 192.14,
+                "found_hz": 191.58,
+                "amplitude": 0.0007
+              },
+              {
+                "order": "+2X",
+                "target_hz": 222.09,
+                "found_hz": 221.56,
+                "amplitude": 0.0036
+              }
+            ],
+            "total_sideband_energy": 0.0082
+          },
+          "details": {
+            "severity": 29.53,
+            "matched_harmonics": [
+              {
+                "harmonic": 1,
+                "target_hz": 162.19,
+                "found_hz": 161.69,
+                "tolerance_hz": 2.43,
+                "amplitude": 0.0032
+              },
+              {
+                "harmonic": 2,
+                "target_hz": 324.37,
+                "found_hz": 323.36,
+                "tolerance_hz": 5.35,
+                "amplitude": 0.0018
+              },
+              {
+                "harmonic": 3,
+                "target_hz": 486.56,
+                "found_hz": 485.05,
+                "tolerance_hz": 8.76,
+                "amplitude": 0.0005
+              }
+            ],
+            "confidence": 1.0,
+            "n_harmonics_matched": 3,
+            "sidebands": {
+              "sidebands_detected": true,
+              "n_sidebands_matched": 4,
+              "matched_sidebands": [
+                {
+                  "order": "-2X",
+                  "target_hz": 102.29,
+                  "found_hz": 101.83,
+                  "amplitude": 0.0031
+                },
+                {
+                  "order": "-1X",
+                  "target_hz": 132.24,
+                  "found_hz": 131.71,
+                  "amplitude": 0.0008
+                },
+                {
+                  "order": "+1X",
+                  "target_hz": 192.14,
+                  "found_hz": 191.58,
+                  "amplitude": 0.0007
+                },
+                {
+                  "order": "+2X",
+                  "target_hz": 222.09,
+                  "found_hz": 221.56,
+                  "amplitude": 0.0036
+                }
+              ],
+              "total_sideband_energy": 0.0082
+            }
+          }
+        },
+        {
+          "name": "Dış Bilezik Arızası (BPFO) [BA]",
+          "abbr": "BPFO",
+          "confidence": 0.67,
+          "severity": 12.15,
+          "score": 8.71,
+          "category": "envelope",
+          "channel": "BA",
+          "n_harmonics_matched": 2,
+          "sidebands_detected": false,
+          "sidebands": {
+            "sidebands_detected": false,
+            "n_sidebands_matched": 0,
+            "matched_sidebands": []
+          },
+          "details": {
+            "severity": 12.15,
+            "matched_harmonics": [
+              {
+                "harmonic": 1,
+                "target_hz": 107.36,
+                "found_hz": 107.77,
+                "tolerance_hz": 1.61,
+                "amplitude": 0.0005
+              },
+              {
+                "harmonic": 3,
+                "target_hz": 322.09,
+                "found_hz": 323.36,
+                "tolerance_hz": 5.8,
+                "amplitude": 0.0018
+              }
+            ],
+            "confidence": 0.67,
+            "n_harmonics_matched": 2,
+            "sidebands": {
+              "sidebands_detected": false,
+              "n_sidebands_matched": 0,
+              "matched_sidebands": []
+            }
+          }
+        },
+        {
+          "name": "Looseness",
+          "abbr": "LOOSENESS",
+          "confidence": 0.8,
+          "severity": 23.0,
+          "score": 8.0,
+          "category": "direct_spectrum",
+          "sidebands_detected": false,
+          "details": {
+            "severity": 23.0,
+            "confidence": 0.8
+          }
+        },
+        {
+          "name": "Kafes Arızası (FTF) [BA]",
+          "abbr": "FTF",
+          "confidence": 0.67,
+          "severity": 8.69,
+          "score": 7.832,
+          "category": "envelope",
+          "channel": "BA",
+          "n_harmonics_matched": 2,
+          "sidebands_detected": false,
+          "sidebands": {
+            "sidebands_detected": false,
+            "n_sidebands_matched": 0,
+            "matched_sidebands": []
+          },
+          "details": {
+            "severity": 8.69,
+            "matched_harmonics": [
+              {
+                "harmonic": 1,
+                "target_hz": 11.93,
+                "found_hz": 12.03,
+                "tolerance_hz": 0.5,
+                "amplitude": 0.0013
+              },
+              {
+                "harmonic": 2,
+                "target_hz": 23.86,
+                "found_hz": 23.96,
+                "tolerance_hz": 0.55,
+                "amplitude": 0.0006
+              }
+            ],
+            "confidence": 0.67,
+            "n_harmonics_matched": 2,
+            "sidebands": {
+              "sidebands_detected": false,
+              "n_sidebands_matched": 0,
+              "matched_sidebands": []
+            }
+          }
+        },
+        {
+          "name": "Misalignment",
+          "abbr": "MISALIGNMENT",
+          "confidence": 1.0,
+          "severity": 6.16,
+          "score": 6.16,
+          "category": "direct_spectrum",
+          "sidebands_detected": false,
+          "details": {
+            "severity": 6.16,
+            "confidence": 1.0
+          }
+        },
+        {
+          "name": "Bilya Arızası (BSF) [BA]",
+          "abbr": "BSF",
+          "confidence": 0.33,
+          "severity": 1.73,
+          "score": 1.599,
+          "category": "envelope",
+          "channel": "BA",
+          "n_harmonics_matched": 1,
+          "sidebands_detected": true,
+          "sidebands": {
+            "sidebands_detected": true,
+            "n_sidebands_matched": 2,
+            "matched_sidebands": [
+              {
+                "order": "+1X",
+                "target_hz": 100.53,
+                "found_hz": 101.83,
+                "amplitude": 0.0031
+              },
+              {
+                "order": "+2X",
+                "target_hz": 130.48,
+                "found_hz": 131.71,
+                "amplitude": 0.0008
+              }
+            ],
+            "total_sideband_energy": 0.0038
+          },
+          "details": {
+            "severity": 1.73,
+            "matched_harmonics": [
+              {
+                "harmonic": 3,
+                "target_hz": 211.75,
+                "found_hz": 209.56,
+                "tolerance_hz": 3.81,
+                "amplitude": 0.0004
+              }
+            ],
+            "confidence": 0.33,
+            "n_harmonics_matched": 1,
+            "sidebands": {
+              "sidebands_detected": true,
+              "n_sidebands_matched": 2,
+              "matched_sidebands": [
+                {
+                  "order": "+1X",
+                  "target_hz": 100.53,
+                  "found_hz": 101.83,
+                  "amplitude": 0.0031
+                },
+                {
+                  "order": "+2X",
+                  "target_hz": 130.48,
+                  "found_hz": 131.71,
+                  "amplitude": 0.0008
+                }
+              ],
+              "total_sideband_energy": 0.0038
+            }
+          }
+        }
+      ],
+      "weak_candidates": [
+        {
+          "name": "Dış Bilezik Arızası (BPFO) [DE]",
+          "abbr": "BPFO",
+          "confidence": 0.33,
+          "severity": 8.96,
+          "score": 3.452,
+          "category": "envelope",
+          "channel": "DE",
+          "n_harmonics_matched": 1,
+          "sidebands_detected": false,
+          "sidebands": {
+            "sidebands_detected": false,
+            "n_sidebands_matched": 0,
+            "matched_sidebands": []
+          },
+          "details": {
+            "severity": 8.96,
+            "matched_harmonics": [
+              {
+                "harmonic": 3,
+                "target_hz": 322.09,
+                "found_hz": 323.37,
+                "tolerance_hz": 5.8,
+                "amplitude": 0.0071
+              }
+            ],
+            "confidence": 0.33,
+            "n_harmonics_matched": 1,
+            "sidebands": {
+              "sidebands_detected": false,
+              "n_sidebands_matched": 0,
+              "matched_sidebands": []
+            }
+          }
+        },
+        {
+          "name": "Dış Bilezik Arızası (BPFO) [FE]",
+          "abbr": "BPFO",
+          "confidence": 0.33,
+          "severity": 7.52,
+          "score": 2.977,
+          "category": "envelope",
+          "channel": "FE",
+          "n_harmonics_matched": 1,
+          "sidebands_detected": false,
+          "sidebands": {
+            "sidebands_detected": false,
+            "n_sidebands_matched": 0,
+            "matched_sidebands": []
+          },
+          "details": {
+            "severity": 7.52,
+            "matched_harmonics": [
+              {
+                "harmonic": 3,
+                "target_hz": 322.09,
+                "found_hz": 323.37,
+                "tolerance_hz": 5.8,
+                "amplitude": 0.0032
+              }
+            ],
+            "confidence": 0.33,
+            "n_harmonics_matched": 1,
+            "sidebands": {
+              "sidebands_detected": false,
+              "n_sidebands_matched": 0,
+              "matched_sidebands": []
+            }
+          }
+        },
+        {
+          "name": "Kafes Arızası (FTF) [FE]",
+          "abbr": "FTF",
+          "confidence": 0.33,
+          "severity": 7.26,
+          "score": 2.891,
+          "category": "envelope",
+          "channel": "FE",
+          "n_harmonics_matched": 1,
+          "sidebands_detected": false,
+          "sidebands": {
+            "sidebands_detected": false,
+            "n_sidebands_matched": 0,
+            "matched_sidebands": []
+          },
+          "details": {
+            "severity": 7.26,
+            "matched_harmonics": [
+              {
+                "harmonic": 1,
+                "target_hz": 11.93,
+                "found_hz": 11.81,
+                "tolerance_hz": 0.5,
+                "amplitude": 0.0036
+              }
+            ],
+            "confidence": 0.33,
+            "n_harmonics_matched": 1,
+            "sidebands": {
+              "sidebands_detected": false,
+              "n_sidebands_matched": 0,
+              "matched_sidebands": []
+            }
+          }
+        }
+      ]
+    },
+    "time_domain_stats": {
+      "overall_rms": 4.25,
+      "acceleration_rms": 0.2912141451890228,
+      "peak_value": 1.726314323817321,
+      "crest_factor": 5.927989235443239,
+      "kurtosis": 2.3962479369506573
+    },
+    "direct_spectrum_diagnosis": {
+      "unbalance": {
+        "severity": 1.23,
+        "confidence": 0.0
+      },
+      "misalignment": {
+        "severity": 6.16,
+        "confidence": 1.0
+      },
+      "looseness": {
+        "severity": 23.0,
+        "confidence": 0.8
+      },
+      "harmonic_amplitudes": {
+        "1": 7.5693,
+        "2": 38.0061,
+        "3": 8.617,
+        "4": 54.5105,
+        "5": 33.1053
+      },
+      "subharmonic_0.5x": 0.1006,
+      "visual_pattern_cross_check": {
+        "observed_dominant_order": "4X",
+        "candidate_matches": [],
+        "note": "Bu kiyaslama sadece baskin harmonik siparisine dayanir; yon (radyal/aksiyal) olcumu ve faz bilgisi olmadan ayni baskin harmonige sahip birden fazla ariza tipi kesin olarak ayirt edilemez."
+      }
+    },
+    "envelope_diagnosis": {
+      "DE": {
+        "BPFO": {
+          "severity": 8.96,
+          "matched_harmonics": [
+            {
+              "harmonic": 3,
+              "target_hz": 322.09,
+              "found_hz": 323.37,
+              "tolerance_hz": 5.8,
+              "amplitude": 0.0071
+            }
+          ],
+          "confidence": 0.33,
+          "n_harmonics_matched": 1,
+          "sidebands": {
+            "sidebands_detected": false,
+            "n_sidebands_matched": 0,
+            "matched_sidebands": []
+          }
+        },
+        "BPFI": {
+          "severity": 61.94,
+          "matched_harmonics": [
+            {
+              "harmonic": 1,
+              "target_hz": 162.19,
+              "found_hz": 161.69,
+              "tolerance_hz": 2.43,
+              "amplitude": 0.0365
+            },
+            {
+              "harmonic": 2,
+              "target_hz": 324.37,
+              "found_hz": 323.37,
+              "tolerance_hz": 5.35,
+              "amplitude": 0.0068
+            },
+            {
+              "harmonic": 3,
+              "target_hz": 486.56,
+              "found_hz": 485.05,
+              "tolerance_hz": 8.76,
+              "amplitude": 0.0037
+            }
+          ],
+          "confidence": 1.0,
+          "n_harmonics_matched": 3,
+          "sidebands": {
+            "sidebands_detected": true,
+            "n_sidebands_matched": 4,
+            "matched_sidebands": [
+              {
+                "order": "-2X",
+                "target_hz": 102.29,
+                "found_hz": 101.83,
+                "amplitude": 0.0171
+              },
+              {
+                "order": "-1X",
+                "target_hz": 132.24,
+                "found_hz": 131.71,
+                "amplitude": 0.0051
+              },
+              {
+                "order": "+1X",
+                "target_hz": 192.14,
+                "found_hz": 191.58,
+                "amplitude": 0.0021
+              },
+              {
+                "order": "+2X",
+                "target_hz": 222.09,
+                "found_hz": 221.56,
+                "amplitude": 0.0069
+              }
+            ],
+            "total_sideband_energy": 0.0312
+          }
+        },
+        "BSF": {
+          "severity": 0.0,
+          "matched_harmonics": [],
+          "confidence": 0.0,
+          "n_harmonics_matched": 0,
+          "sidebands": {
+            "sidebands_detected": false,
+            "n_sidebands_matched": 0,
+            "matched_sidebands": []
+          }
+        },
+        "FTF": {
+          "severity": 0.0,
+          "matched_harmonics": [],
+          "confidence": 0.0,
+          "n_harmonics_matched": 0,
+          "sidebands": {
+            "sidebands_detected": false,
+            "n_sidebands_matched": 0,
+            "matched_sidebands": []
+          }
+        }
+      },
+      "FE": {
+        "BPFO": {
+          "severity": 7.52,
+          "matched_harmonics": [
+            {
+              "harmonic": 3,
+              "target_hz": 322.09,
+              "found_hz": 323.37,
+              "tolerance_hz": 5.8,
+              "amplitude": 0.0032
+            }
+          ],
+          "confidence": 0.33,
+          "n_harmonics_matched": 1,
+          "sidebands": {
+            "sidebands_detected": false,
+            "n_sidebands_matched": 0,
+            "matched_sidebands": []
+          }
+        },
+        "BPFI": {
+          "severity": 51.68,
+          "matched_harmonics": [
+            {
+              "harmonic": 1,
+              "target_hz": 162.19,
+              "found_hz": 161.69,
+              "tolerance_hz": 2.43,
+              "amplitude": 0.015
+            },
+            {
+              "harmonic": 2,
+              "target_hz": 324.37,
+              "found_hz": 323.37,
+              "tolerance_hz": 5.35,
+              "amplitude": 0.0032
+            },
+            {
+              "harmonic": 3,
+              "target_hz": 486.56,
+              "found_hz": 485.05,
+              "tolerance_hz": 8.76,
+              "amplitude": 0.0043
+            }
+          ],
+          "confidence": 1.0,
+          "n_harmonics_matched": 3,
+          "sidebands": {
+            "sidebands_detected": true,
+            "n_sidebands_matched": 4,
+            "matched_sidebands": [
+              {
+                "order": "-2X",
+                "target_hz": 102.29,
+                "found_hz": 101.83,
+                "amplitude": 0.0076
+              },
+              {
+                "order": "-1X",
+                "target_hz": 132.24,
+                "found_hz": 131.71,
+                "amplitude": 0.0025
+              },
+              {
+                "order": "+1X",
+                "target_hz": 192.14,
+                "found_hz": 191.58,
+                "amplitude": 0.0028
+              },
+              {
+                "order": "+2X",
+                "target_hz": 222.09,
+                "found_hz": 221.56,
+                "amplitude": 0.0033
+              }
+            ],
+            "total_sideband_energy": 0.0162
+          }
+        },
+        "BSF": {
+          "severity": 0.0,
+          "matched_harmonics": [],
+          "confidence": 0.0,
+          "n_harmonics_matched": 0,
+          "sidebands": {
+            "sidebands_detected": false,
+            "n_sidebands_matched": 0,
+            "matched_sidebands": []
+          }
+        },
+        "FTF": {
+          "severity": 7.26,
+          "matched_harmonics": [
+            {
+              "harmonic": 1,
+              "target_hz": 11.93,
+              "found_hz": 11.81,
+              "tolerance_hz": 0.5,
+              "amplitude": 0.0036
+            }
+          ],
+          "confidence": 0.33,
+          "n_harmonics_matched": 1,
+          "sidebands": {
+            "sidebands_detected": false,
+            "n_sidebands_matched": 0,
+            "matched_sidebands": []
+          }
+        }
+      },
+      "BA": {
+        "BPFO": {
+          "severity": 12.15,
+          "matched_harmonics": [
+            {
+              "harmonic": 1,
+              "target_hz": 107.36,
+              "found_hz": 107.77,
+              "tolerance_hz": 1.61,
+              "amplitude": 0.0005
+            },
+            {
+              "harmonic": 3,
+              "target_hz": 322.09,
+              "found_hz": 323.36,
+              "tolerance_hz": 5.8,
+              "amplitude": 0.0018
+            }
+          ],
+          "confidence": 0.67,
+          "n_harmonics_matched": 2,
+          "sidebands": {
+            "sidebands_detected": false,
+            "n_sidebands_matched": 0,
+            "matched_sidebands": []
+          }
+        },
+        "BPFI": {
+          "severity": 29.53,
+          "matched_harmonics": [
+            {
+              "harmonic": 1,
+              "target_hz": 162.19,
+              "found_hz": 161.69,
+              "tolerance_hz": 2.43,
+              "amplitude": 0.0032
+            },
+            {
+              "harmonic": 2,
+              "target_hz": 324.37,
+              "found_hz": 323.36,
+              "tolerance_hz": 5.35,
+              "amplitude": 0.0018
+            },
+            {
+              "harmonic": 3,
+              "target_hz": 486.56,
+              "found_hz": 485.05,
+              "tolerance_hz": 8.76,
+              "amplitude": 0.0005
+            }
+          ],
+          "confidence": 1.0,
+          "n_harmonics_matched": 3,
+          "sidebands": {
+            "sidebands_detected": true,
+            "n_sidebands_matched": 4,
+            "matched_sidebands": [
+              {
+                "order": "-2X",
+                "target_hz": 102.29,
+                "found_hz": 101.83,
+                "amplitude": 0.0031
+              },
+              {
+                "order": "-1X",
+                "target_hz": 132.24,
+                "found_hz": 131.71,
+                "amplitude": 0.0008
+              },
+              {
+                "order": "+1X",
+                "target_hz": 192.14,
+                "found_hz": 191.58,
+                "amplitude": 0.0007
+              },
+              {
+                "order": "+2X",
+                "target_hz": 222.09,
+                "found_hz": 221.56,
+                "amplitude": 0.0036
+              }
+            ],
+            "total_sideband_energy": 0.0082
+          }
+        },
+        "BSF": {
+          "severity": 1.73,
+          "matched_harmonics": [
+            {
+              "harmonic": 3,
+              "target_hz": 211.75,
+              "found_hz": 209.56,
+              "tolerance_hz": 3.81,
+              "amplitude": 0.0004
+            }
+          ],
+          "confidence": 0.33,
+          "n_harmonics_matched": 1,
+          "sidebands": {
+            "sidebands_detected": true,
+            "n_sidebands_matched": 2,
+            "matched_sidebands": [
+              {
+                "order": "+1X",
+                "target_hz": 100.53,
+                "found_hz": 101.83,
+                "amplitude": 0.0031
+              },
+              {
+                "order": "+2X",
+                "target_hz": 130.48,
+                "found_hz": 131.71,
+                "amplitude": 0.0008
+              }
+            ],
+            "total_sideband_energy": 0.0038
+          }
+        },
+        "FTF": {
+          "severity": 8.69,
+          "matched_harmonics": [
+            {
+              "harmonic": 1,
+              "target_hz": 11.93,
+              "found_hz": 12.03,
+              "tolerance_hz": 0.5,
+              "amplitude": 0.0013
+            },
+            {
+              "harmonic": 2,
+              "target_hz": 23.86,
+              "found_hz": 23.96,
+              "tolerance_hz": 0.55,
+              "amplitude": 0.0006
+            }
+          ],
+          "confidence": 0.67,
+          "n_harmonics_matched": 2,
+          "sidebands": {
+            "sidebands_detected": false,
+            "n_sidebands_matched": 0,
+            "matched_sidebands": []
+          }
+        }
+      }
+    },
+    "fault_localization": {
+      "BSF": {
+        "dominant_channel": "BA",
+        "physical_location": "Taban / govde (Base)",
+        "channel_severities": {
+          "DE": 0.0,
+          "FE": 0.0,
+          "BA": 1.73
+        },
+        "severity_ratio": "inf"
+      },
+      "BPFI": {
+        "dominant_channel": null,
+        "physical_location": "Belirsiz — kanallar arasi fark yetersiz (oran 1.20 < esik 1.5)",
+        "channel_severities": {
+          "DE": 61.94,
+          "FE": 51.68,
+          "BA": 29.53
+        },
+        "severity_ratio": 1.2
+      },
+      "FTF": {
+        "dominant_channel": null,
+        "physical_location": "Belirsiz — kanallar arasi fark yetersiz (oran 1.20 < esik 1.5)",
+        "channel_severities": {
+          "DE": 0.0,
+          "FE": 7.26,
+          "BA": 8.69
+        },
+        "severity_ratio": 1.2
+      },
+      "BPFO": {
+        "dominant_channel": null,
+        "physical_location": "Belirsiz — kanallar arasi fark yetersiz (oran 1.36 < esik 1.5)",
+        "channel_severities": {
+          "DE": 8.96,
+          "FE": 7.52,
+          "BA": 12.15
+        },
+        "severity_ratio": 1.36
+      }
+    },
+    "reciprocating_diagnosis": {},
+    "iso_severity_zone": "C",
+    "iso_severity_meaning": "Just Tolerable",
+    "iso_severity_range_mm_s": [
+      2.8,
+      7.1
+    ],
+    "rpm": 1797.0,
+    "sampling_frequency_hz": 12000.0,
+    "vibration_velocity_rms_mm_s": 4.25,
+    "kurtogram_reliable": false,
+    "band_source": "table_p29_vision",
+    "primary_channel": "DE",
+    "self_corrector_decision": "approved_with_warning",
+    "checker_results": {},
+    "correction_attempts": {
+      "retrieval": 1,
+      "generation": 2,
+      "total": 3
+    },
+    "is_flagged": true,
+    "flag_reason": "Düzeltme döngüsü maksimum deneme sınırına ulaştı (Sistem güvenli çıkış yaptı).",
+    "corrector_history": [
+      {
+        "cycle": 4,
+        "decision": "approved_with_warning",
+        "reason": "Düzeltme döngüsü maksimum deneme sınırına ulaştı (Sistem güvenli çıkış yaptı)."
+      }
+    ],
+    "corrector_metrics": {
+      "tokens_input": 2821,
+      "tokens_output": 199,
+      "total_tokens": 3020,
+      "estimated_cost_usd": 0.000272,
+      "llm_calls": 2
+    },
+    "saved_plots": {
+      "fft_spectrum_html": "sample_outputs/signal_only_fft_spectrum.html",
+      "fft_spectrum_path": "sample_outputs/signal_only_fft_spectrum.html",
+      "kurtogram_html": "sample_outputs/signal_only_kurtogram.html",
+      "kurtogram_path": "sample_outputs/signal_only_kurtogram.html"
+    }
+  }
+}
