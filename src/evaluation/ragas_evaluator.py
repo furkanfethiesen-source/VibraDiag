@@ -134,7 +134,7 @@ DEFAULT_OUTPUT_DIR = _EVAL_PATHS["eval_output_dir"]
 _NON_METRIC_ROW_FIELDS = ("user_input", "retrieved_contexts", "reference", "response", "_id")
 
 
-def build_retrieval_graph() -> tuple[RetrievalGraph, dict[str, Any]]:
+def build_retrieval_graph(enable_decomposer: bool = False) -> tuple[RetrievalGraph, dict[str, Any]]:
     """
     Kalıcı Qdrant/DocStore veritabanlarına bağlanarak tam RetrievalGraph'ı kurar.
     Konfigürasyonu yükler ve açıkça çözümlenen parametreleri döner.
@@ -153,8 +153,9 @@ def build_retrieval_graph() -> tuple[RetrievalGraph, dict[str, Any]]:
         reranker_cfg = getattr(ret_cfg, "hybrid_search", {}).get("reranker", {}) or {}
         reranker_model = reranker_cfg.get("model", "BAAI/bge-reranker-large")
         reranker_device = reranker_cfg.get("device", device)
-        reranker_score_threshold = float(reranker_cfg.get("score_threshold", 0.35))
-        visual_fallback_threshold = float(reranker_cfg.get("visual_fallback_threshold", 0.35))
+        reranker_score_threshold = float(reranker_cfg.get("score_threshold", 0.20))
+        reranker_floor = float(reranker_cfg.get("soft_fallback_floor", 0.10))
+        visual_fallback_threshold = float(reranker_cfg.get("visual_fallback_threshold", 0.20))
         config_source = "retrieval.yaml + app.yaml"
     except Exception as err:
         logger.error(f"Konfigürasyon dosyaları yüklenirken hata oluştu: {err}. Varsayılan değerler kullanılıyor.")
@@ -164,8 +165,9 @@ def build_retrieval_graph() -> tuple[RetrievalGraph, dict[str, Any]]:
         device = "mps"
         reranker_model = "BAAI/bge-reranker-large"
         reranker_device = "mps"
-        reranker_score_threshold = 0.35
-        visual_fallback_threshold = 0.35
+        reranker_score_threshold = 0.20
+        reranker_floor = 0.10
+        visual_fallback_threshold = 0.20
         config_source = f"FALLBACK_DEFAULTS (hata: {err})"
 
     logger.info(f"Embedder başlatılıyor: {embed_model} ({device}) [Kaynak: {config_source}]")
@@ -174,11 +176,12 @@ def build_retrieval_graph() -> tuple[RetrievalGraph, dict[str, Any]]:
     logger.info("SparseEncoder başlatılıyor...")
     sparse_encoder = SparseEncoder()
 
-    logger.info(f"Reranker başlatılıyor: {reranker_model} ({reranker_device}) (threshold={reranker_score_threshold:.2f})")
+    logger.info(f"Reranker başlatılıyor: {reranker_model} ({reranker_device}) (threshold={reranker_score_threshold:.2f}, floor={reranker_floor:.2f})")
     reranker = Reranker(
         model_name=reranker_model,
         device=reranker_device,
         score_threshold=reranker_score_threshold,
+        soft_fallback_floor=reranker_floor,
     )
 
     from qdrant_client import QdrantClient
@@ -207,14 +210,32 @@ def build_retrieval_graph() -> tuple[RetrievalGraph, dict[str, Any]]:
     )
     visual_retriever = VisualRetriever(embedder=embedder, vector_db=visual_vector_db)
 
+    classifier = None
+    decomposer = None
+    if enable_decomposer:
+        try:
+            from query_decomposer.classifier import QueryComplexityClassifier
+            from query_decomposer.llm_decomposer import LLMDecomposer
+            classifier = QueryComplexityClassifier(
+                model_path="src/query_decomposer/models/complexity_pipeline.pkl",
+                training_data_path="data/decomposer_data/training.jsonl",
+            )
+            decomposer = LLMDecomposer()
+            logger.info("Decomposer ve QueryComplexityClassifier aktif.")
+        except Exception as e:
+            logger.warning(f"Decomposer başlatılamadı: {e}")
+
     graph = RetrievalGraph(
         text_retriever=text_retriever,
         visual_retriever=visual_retriever,
         threshold=visual_fallback_threshold,
+        classifier=classifier,
+        decomposer=decomposer,
     )
 
     params = {
         "config_source": config_source,
+        "decomposer_enabled": enable_decomposer,
         "embedder_model": embed_model,
         "embedder_device": device,
         "sparse_encoder_model": sparse_encoder.model.__class__.__name__ if hasattr(sparse_encoder, "model") else "n/a",
@@ -222,6 +243,7 @@ def build_retrieval_graph() -> tuple[RetrievalGraph, dict[str, Any]]:
         "reranker_device": reranker_device,
         "reranker_candidate_pool_rerank_top_k": 25,
         "reranker_score_threshold": reranker.score_threshold,
+        "reranker_soft_fallback_floor": reranker.soft_fallback_floor,
         "visual_fallback_threshold": visual_fallback_threshold,
     }
 
@@ -508,6 +530,7 @@ def write_markdown_report(
     n_no_context: int,
     n_generation_errors: int,
     n_retrieval_errors: int,
+    records: list[dict[str, Any]] | None = None,
 ) -> None:
     lines: list[str] = []
     lines.append(f"# 📊 VibraDiag Evaluation Report — `{run_id}`")
@@ -576,6 +599,22 @@ def write_markdown_report(
         row = f"| **{ft}** | " + " | ".join(f"**{scores.get(m, 0.0):.4f}**" for m in metric_names) + " |"
         lines.append(row)
     lines.append("")
+
+    if records:
+        lines.append("## 📋 Soru Bazlı Detaylı Kıyaslama Tablosu")
+        lines.append("")
+        lines.append("| ID | Soru | Kategori | Hit (Parent) | Beklenen Parent | Çekilen Parent | Context Durumu |")
+        lines.append("| :--- | :--- | :--- | :---: | :--- | :--- | :--- |")
+        for r in records:
+            qid = r.get("_id", "N/A")
+            q = (r.get("question") or "")[:45] + ("..." if len(r.get("question", "")) > 45 else "")
+            ft = r.get("fault_type", "genel")
+            hit = "✅ Başarılı" if (r.get("det_parent_hit_rate", 0.0) or 0.0) > 0 else "❌ Kaçtı"
+            exp_p = ", ".join(r.get("expected_parent_chunk_ids") or [])
+            ret_p = ", ".join(r.get("retrieved_parent_ids") or [])
+            ctx_stat = f"🟢 {r.get('n_retrieved_contexts', 0)} chunk" if r.get("n_retrieved_contexts", 0) > 0 else "🔴 Boş Context"
+            lines.append(f"| `{qid}` | {q} | `{ft}` | **{hit}** | `{exp_p}` | `{ret_p}` | {ctx_stat} |")
+        lines.append("")
 
     if n_no_context or n_generation_errors or n_retrieval_errors:
         lines.append("## ⚠️ Uyarılar ve Hata Özeti")
@@ -723,6 +762,7 @@ def build_and_save_reports(
         n_no_context=n_no_context,
         n_generation_errors=n_generation_errors,
         n_retrieval_errors=n_retrieval_errors,
+        records=records,
     )
     write_csv_report(csv_path=csv_path, records=records, metric_cols=metric_cols)
 
@@ -757,6 +797,8 @@ def main() -> None:
     parser.add_argument("--visual-top-k", type=int, default=3, help="VisualRetriever top_k")
     parser.add_argument("--threshold", type=float, default=None, help="Visual fallback eşiği (verilmezse retrieval.yaml kullanılır)")
     parser.add_argument("--deduplicate-parents", action="store_true", default=False, help="Eval esnasında parent tekilleştirme yap (Varsayılan: False)")
+    parser.add_argument("--enable-decomposer", action="store_true", default=False, help="Decomposer ve alt sorgu ayrıştırmasını aktif et (Varsayılan: False)")
+    parser.add_argument("--enable-corrector", action="store_true", default=False, help="Self-Corrector doğrulama döngüsünü aktif et (Varsayılan: False)")
     parser.add_argument("--with-entity-recall", action="store_true", help="ContextEntityRecall metriğini ekle")
     parser.add_argument("--judge-model", default="gemini-3.1-flash-lite", help="RAGAS LLM judge modeli")
     parser.add_argument("--generator-model", default="qwen/qwen3.6-27b", help="Üretim (generation) LLM modeli")
@@ -779,8 +821,8 @@ def main() -> None:
         gold_items = gold_items[: args.sample]
         logger.info(f"--sample: yalnızca ilk {len(gold_items)} soru değerlendirilecek")
 
-    logger.info("Retrieval pipeline kuruluyor...")
-    graph, retrieval_params = build_retrieval_graph()
+    logger.info(f"Retrieval pipeline kuruluyor (enable_decomposer={args.enable_decomposer})...")
+    graph, retrieval_params = build_retrieval_graph(enable_decomposer=args.enable_decomposer)
 
     generation_client, generation_params = build_generation_client(skip=args.skip_generation, model_name=args.generator_model)
 
