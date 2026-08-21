@@ -396,6 +396,31 @@ class FaithfulnessChecker:
 
         if not context_text.strip():
             latency_ms = (time.time() - start_time) * 1000
+
+            norm_gen = normalize_text_tr(generated_text)
+            refusal_phrases = [
+                "bilgi bulunmamaktadır", "bilgi yer almamaktadır",
+                "yeterli bilgi yok", "bilgi bulunamadı",
+                "bağlamda bulunmamaktadır", "bağlamda yer almamaktadır",
+                "bilgiye ulaşılamamıştır", "bu konuda bilgi bulunmamaktadır",
+                "belgelerde yer almamaktadır", "kaynaklarda yer almamaktadır",
+                "karşılayan bir bilgi", "dokümantasyonda yer almamaktadır",
+            ]
+            is_refusal = any(phrase in norm_gen for phrase in refusal_phrases)
+            if is_refusal:
+                logger.info(
+                    "FaithfulnessChecker: Bağlam boş, epistemik ret tespit edildi — halüsinasyon yok."
+                )
+                return CheckerResult(
+                    checker_name="faithfulness",
+                    passed=True,
+                    score=0.95,
+                    rationale="Bağlam boş ve model dürüst epistemik ret uyguladı — halüsinasyon yok.",
+                    token_usage=TokenUsageInfo(),
+                    latency_ms=latency_ms,
+                    execution_error=False,
+                )
+
             return CheckerResult(
                 checker_name="faithfulness",
                 passed=False,

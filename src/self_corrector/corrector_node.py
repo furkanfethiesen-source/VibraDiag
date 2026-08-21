@@ -444,7 +444,7 @@ def self_corrector_node(
             attempt_number=new_total_attempts,
         )
 
-        new_excluded = current_chunk_ids
+        new_excluded = current_chunk_ids if strategy_used == "domain_dictionary" else []
         
         failed_checkers_names = [k for k, res in checker_results.items() if getattr(res, "execution_error", False)]
         flag_reason = f"LLM judge execution error (fail-open) in: {', '.join(failed_checkers_names)}" if has_execution_error else None
