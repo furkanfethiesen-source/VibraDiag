@@ -178,23 +178,23 @@ def hilbert_envelope(filtered_signal: np.ndarray) -> np.ndarray:
 
 
 def envelope_fft(envelope: np.ndarray, fs: float, zero_pad_factor: int = 1,
-                remove_dc: bool = True):
+                remove_dc: bool = True, high_pass_cutoff_hz: float | None = 2.0):
     """
     hilbert_envelope() ciktisinin kendi spektrumunu (envelope spectrum) cikarir.
-    Pencereleme (Hann) spektral sizintiyi azaltir.
-
-    Adim 3.4: zero_pad_factor varsayilani 4'ten 1'e indirildi. Bin-alti
-    frekans hassasiyeti artik zero-padding yerine match_peaks/
-    match_ratio_pattern icindeki 3-nokta parabolik enterpolasyonla
-    saglaniyor — ayni hassasiyet, daha kucuk FFT boyutu (daha az bellek/
-    hesap). Ihtiyac halinde zero_pad_factor eskisi gibi >1 verilebilir.
-
-    Adim 3.5: gereksiz .copy() kaldirildi — `x * window` zaten yeni bir
-    array urettigi icin orijinal `envelope.copy()` hicbir zaman islevsel
-    olarak gerekli degildi.
+    DC ofset ve asiri dusuk frekansli zemin kaymalarini (drift) gidermek icin
+    yuksek geciren filtreleme ve Hann pencerelemesi uygular.
     """
     n = len(envelope)
-    x = envelope - np.mean(envelope) if remove_dc else envelope
+    x = detrend(envelope, type='linear') if remove_dc else envelope.copy()
+    if remove_dc:
+        x = x - np.mean(x)
+
+    if high_pass_cutoff_hz is not None and high_pass_cutoff_hz > 0 and (high_pass_cutoff_hz < fs / 2.0):
+        try:
+            sos = butter(2, high_pass_cutoff_hz / (fs / 2.0), btype='highpass', output='sos')
+            x = sosfiltfilt(sos, x)
+        except Exception:
+            pass
 
     window = hann(n)
     x_windowed = x * window
@@ -233,7 +233,7 @@ def calc_fault_freqs(rpm: float, n_balls: int, ball_diameter: float,
     bsf = (pitch_diameter / (2.0 * ball_diameter)) * fr * (1 - (ratio * cos_phi) ** 2)
     ftf = (fr / 2.0) * (1 - ratio * cos_phi)
 
-    return {"BPFO": bpfo, "BPFI": bpfi, "BSF": bsf, "FTF": ftf}
+    return {"BPFO": bpfo, "BPFI": bpfi, "BSF": bsf, "FTF": ftf, "2BSF": 2.0 * bsf}
 
 
 def _dynamic_tolerance(
@@ -300,36 +300,54 @@ def _check_sidebands(
     peak_freqs: np.ndarray,
     center_freq: float,
     fr: float,
+    fault_name: str = "BPFI",
+    ftf: float | None = None,
     min_abs_tol_hz: float = 0.5,
     tolerance_ratio: float = 0.015,
 ) -> dict[str, Any]:
     """
-    Checks for 1X (fr) and 2X (2*fr) modulation sidebands around center_freq (e.g. BPFI +- fr, BPFI +- 2*fr).
-    Returns sideband matching status, matched frequencies, and energy.
+    Checks for modulation sidebands:
+    - BPFI: checks shaft speed modulation (center +- fr, center +- 2*fr)
+    - BSF: checks cage speed modulation (center +- FTF, center +- 2*FTF, and center +- fr)
+    Returns sideband matching status, matched frequencies, and total sideband energy.
     """
     sideband_orders = [-2, -1, 1, 2]
     matched_sidebands = []
     total_sideband_energy = 0.0
 
-    for order in sideband_orders:
-        sb_target = center_freq + (order * fr)
-        if sb_target < 0.5 or sb_target >= freqs[-1]:
-            continue
+    # Determine modulation frequencies to test
+    mod_configs: list[tuple[float, str]] = []
+    if fault_name == "BSF":
+        cage_mod = ftf if (ftf is not None and ftf > 0) else (fr * 0.4)
+        mod_configs.append((cage_mod, "FTF"))
+        mod_configs.append((fr, "1X"))
+    else:
+        mod_configs.append((fr, "1X"))
 
-        sb_tol = max(min_abs_tol_hz, sb_target * tolerance_ratio)
-        diffs = np.abs(peak_freqs - sb_target)
-        if len(diffs) > 0:
-            min_diff_idx = int(np.argmin(diffs))
-            if diffs[min_diff_idx] <= sb_tol:
-                matched_sb_freq = float(peak_freqs[min_diff_idx])
-                sb_amp = _band_rms_energy(freqs, magnitude, sb_target, sb_tol)
-                matched_sidebands.append({
-                    "order": f"{order:+d}X",
-                    "target_hz": round(sb_target, 2),
-                    "found_hz": round(matched_sb_freq, 2),
-                    "amplitude": round(sb_amp, 4),
-                })
-                total_sideband_energy += sb_amp
+    # For BSF, check sidebands around both 2xBSF and 1xBSF
+    center_freqs = [center_freq, center_freq * 2.0] if fault_name == "BSF" else [center_freq]
+
+    for c_freq in center_freqs:
+        for mod_spacing, mod_label in mod_configs:
+            for order in sideband_orders:
+                sb_target = c_freq + (order * mod_spacing)
+                if sb_target < 0.5 or sb_target >= freqs[-1]:
+                    continue
+
+                sb_tol = max(min_abs_tol_hz, sb_target * tolerance_ratio)
+                diffs = np.abs(peak_freqs - sb_target) if len(peak_freqs) > 0 else np.array([])
+                if len(diffs) > 0:
+                    min_diff_idx = int(np.argmin(diffs))
+                    if diffs[min_diff_idx] <= sb_tol:
+                        matched_sb_freq = float(peak_freqs[min_diff_idx])
+                        sb_amp = _band_rms_energy(freqs, magnitude, sb_target, sb_tol)
+                        matched_sidebands.append({
+                            "order": f"{order:+d}{mod_label} ({c_freq:.1f}Hz)",
+                            "target_hz": round(sb_target, 2),
+                            "found_hz": round(matched_sb_freq, 2),
+                            "amplitude": round(sb_amp, 4),
+                        })
+                        total_sideband_energy += sb_amp
 
     has_sidebands = len(matched_sidebands) >= 1
     return {
@@ -385,23 +403,27 @@ def match_peaks(freqs: np.ndarray, magnitude: np.ndarray, fault_freqs: dict,
                 fr: float = 29.95, min_abs_tol_hz: float = 0.5,
                 tolerance_ratio: float = 0.015):
     """
-    Matches envelope spectrum peaks with characteristic bearing fault frequencies (and harmonics).
-    Utilizes proportional dynamic tolerance and localized noise floor baseline calculation.
+    2 Kademeli Hibrit (Gated Band-RMS) Zarf Spektrumu Tepe ve Harmonik Eşleştiricisi.
+    Kademe 1 (Gating): Hedef frekans tolerans penceresinde gürültü zeminini aşan gerçek bir tepe var mı kontrol eder.
+    Kademe 2 (Bant-RMS): Tepe varlığı doğrulandığında, arıza şiddetini Simpson entegrasyonlu bant enerjisiyle hesaplar.
     """
-    min_prominence = magnitude.max() * prominence_ratio
+    baseline = np.median(magnitude[magnitude > 0]) if np.any(magnitude > 0) else 1.0
+    min_prominence = max(magnitude.max() * prominence_ratio, baseline * 1.5)
     peak_idx, _ = find_peaks(magnitude, prominence=min_prominence)
-    peak_freqs = freqs[peak_idx]
+    peak_freqs = freqs[peak_idx] if len(peak_idx) > 0 else np.array([])
+
+    ftf_freq = fault_freqs.get("FTF")
 
     if len(peak_freqs) == 0:
         return {name: {
             "severity": 0.0, "matched_harmonics": [], "confidence": 0.0,
             "sidebands": {"sidebands_detected": False, "n_sidebands_matched": 0, "matched_sidebands": []}
-        } for name in fault_freqs}
+        } for name in fault_freqs if name not in ("fr", "2BSF")}
 
     results = {}
 
     for fault_name, base_freq in fault_freqs.items():
-        if fault_name == "fr" or base_freq is None:
+        if fault_name in ("fr", "2BSF") or base_freq is None:
             continue
 
         harmonics = np.arange(1, n_harmonics + 1)
@@ -414,11 +436,11 @@ def match_peaks(freqs: np.ndarray, magnitude: np.ndarray, fault_freqs: dict,
 
         local_baseline = _get_local_baseline(freqs, magnitude, base_freq, fr=fr)
 
-        if len(target_freqs) > 0:
+        if len(target_freqs) > 0 and len(peak_freqs) > 0:
             diff_matrix = np.abs(peak_freqs[None, :] - target_freqs[:, None])
             closest_peak_local_idx = np.argmin(diff_matrix, axis=1)
             closest_diffs = diff_matrix[np.arange(len(target_freqs)), closest_peak_local_idx]
-            
+
             tolerances = _dynamic_tolerance(
                 harmonics,
                 base_freq=base_freq,
@@ -444,6 +466,7 @@ def match_peaks(freqs: np.ndarray, magnitude: np.ndarray, fault_freqs: dict,
                     })
                     total_energy += band_amp
 
+        # Check sidebands
         sideband_info = {"sidebands_detected": False, "n_sidebands_matched": 0, "matched_sidebands": []}
         if fault_name in ("BPFI", "BSF") and len(matched_harmonics) > 0:
             sideband_info = _check_sidebands(
@@ -452,6 +475,8 @@ def match_peaks(freqs: np.ndarray, magnitude: np.ndarray, fault_freqs: dict,
                 peak_freqs=peak_freqs,
                 center_freq=base_freq,
                 fr=fr,
+                fault_name=fault_name,
+                ftf=ftf_freq,
                 min_abs_tol_hz=min_abs_tol_hz,
                 tolerance_ratio=tolerance_ratio,
             )
@@ -475,20 +500,11 @@ def match_named_frequencies(freqs: np.ndarray, magnitude: np.ndarray,
                             prominence_ratio: float = 0.05) -> dict:
     """match_peaks'in genellemesi: named_freqs'teki her frekans TEK BASINA
     mutlak bir hedeftir (bir taban frekansin harmonik serisi degil).
-
-    Kullanim alani: pistonlu makine ariza frekanslari (table_p47_0+p48)
-    gibi, her biri farkli bir fiziksel mekanizmaya (piston slap, misfiring
-    vb.) karsilik gelen, birbiriyle harmonik iliskisi olmayan isimli
-    frekans setleri.
-
-    "Eslesme" (matched=True) icin gercek bir spektral tepe (find_peaks)
-    gerekiyor; raporlanan genlik/siddet ise match_peaks'teki gibi
-    dinamik-toleranslu bant-RMS enerjisi (Faz 3, Adim 3.3).
     """
-    min_prominence = magnitude.max() * prominence_ratio
+    baseline = np.median(magnitude[magnitude > 0]) if np.any(magnitude > 0) else 1.0
+    min_prominence = max(magnitude.max() * prominence_ratio, baseline * 1.5)
     peak_idx, _ = find_peaks(magnitude, prominence=min_prominence)
-    peak_freqs = freqs[peak_idx]
-    baseline = np.median(magnitude[magnitude > 0])
+    peak_freqs = freqs[peak_idx] if len(peak_idx) > 0 else np.array([])
 
     results = {}
     for name, target_freq in named_freqs.items():
@@ -509,8 +525,8 @@ def match_named_frequencies(freqs: np.ndarray, magnitude: np.ndarray,
                 global_idx = peak_idx[closest_local_idx]
                 found_hz, _ = _parabolic_peak_refine(magnitude, global_idx, freqs)
 
-        band_amp = _band_rms_energy(freqs, magnitude, target_freq, tolerance_hz)
-        severity = band_amp / baseline if baseline > 0 else 0.0
+        band_amp = _band_rms_energy(freqs, magnitude, target_freq, tolerance_hz) if matched else 0.0
+        severity = band_amp / baseline if (baseline > 0 and matched) else 0.0
 
         results[name] = {
             "matched": matched,
@@ -528,23 +544,16 @@ def match_ratio_pattern(freqs: np.ndarray, magnitude: np.ndarray, fr: float,
                         tolerance_alpha: float = 0.15):
     """
     Ham sinyalin dogrudan spektrumundan (envelope_fft degil) unbalance /
-    misalignment / looseness icin oran tabanli desen eslestirmesi yapar.
+    misalignment / looseness icin 2 Kademeli Hibrit (Gated Band-RMS) analizi yapar.
 
-    Adim 3.2/3.3: harmonik genlikleri artik dinamik toleranslu bant-RMS
-    enerjisiyle hesaplaniyor (find_peaks + en-yakin-tepe arama yerine).
-    NOT (semantik degisiklik): eski yontemde bir harmonikte gercek bir
-    spektral tepe yoksa genlik tam 0 donuyordu; RMS-bant yontemi o
-    bolgedeki gurultu tabanini da yakaladigi icin kucuk-ama-sifir-olmayan
-    degerler dondurebilir. Bu fiziksel olarak daha dogru (enerji tabanli)
-    ama eski severity sayilarinla birebir olceklenmez.
-
-    NOT (bilinen limitasyon, degismedi): misalignment ve looseness spektral
-    imzalari birbirine benzeyebilir (ikisi de ust harmonikleri yukseltir);
-    tek kanalli bir olcumle bu ikisi her zaman guvenilir sekilde
-    ayristirilamaz. fault_localization.check_coupling_phase() ile faz
-    bilgisi eklenmesi onerilir (bkz. Faz 2).
+    Kademe 1: 1X, 2X, 3X... bilesenlerinde arka plan gurultusunu asan gercek bir tepe (peak) var mi kontrol eder.
+    Kademe 2: Sadece tepe tespit edilen harmoniklerde Simpson Bant-RMS enerjisini hesaplar.
     """
-    baseline = np.median(magnitude[magnitude > 0])
+    baseline = float(np.median(magnitude[magnitude > 0])) if np.any(magnitude > 0) else 1.0
+
+    min_prom = baseline * 2.0
+    peak_idx, _ = find_peaks(magnitude, prominence=min_prom)
+    peak_freqs = freqs[peak_idx] if len(peak_idx) > 0 else np.array([])
 
     harmonics = np.arange(1, n_harmonics + 1)
     target_freqs = fr * harmonics
@@ -552,35 +561,55 @@ def match_ratio_pattern(freqs: np.ndarray, magnitude: np.ndarray, fr: float,
     harmonics, target_freqs = harmonics[valid], target_freqs[valid]
     tolerances = _dynamic_tolerance(harmonics, tolerance_hz, tolerance_alpha)
 
-    amps = {
-        int(h): _band_rms_energy(freqs, magnitude, tf, tol)
-        for h, tf, tol in zip(harmonics, target_freqs, tolerances)
-    }
+    amps = {}
+    peaks_present = {}
+    for h, tf, tol in zip(harmonics, target_freqs, tolerances):
+        has_peak = False
+        if len(peak_freqs) > 0:
+            diffs = np.abs(peak_freqs - tf)
+            if np.any(diffs <= tol):
+                has_peak = True
+        peaks_present[int(h)] = has_peak
+        if has_peak:
+            amps[int(h)] = _band_rms_energy(freqs, magnitude, tf, tol)
+        else:
+            amps[int(h)] = 0.0
 
     subharmonic_tol = float(_dynamic_tolerance(1, tolerance_hz, tolerance_alpha))
-    subharmonic_amp = _band_rms_energy(freqs, magnitude, fr * 0.5, subharmonic_tol)
+    has_sub = np.any(np.abs(peak_freqs - fr * 0.5) <= subharmonic_tol) if len(peak_freqs) > 0 else False
+    subharmonic_amp = _band_rms_energy(freqs, magnitude, fr * 0.5, subharmonic_tol) if has_sub else 0.0
 
     a1 = amps.get(1, 0.0)
-
-    unbalance_ratio_penalty = (
-        sum(amps.get(h, 0.0) for h in range(2, n_harmonics + 1)) / a1
-        if a1 > 0 else np.inf
-    )
-    unbalance_severity = (a1 / baseline) if baseline > 0 else 0.0
-    unbalance_confidence = max(0.0, 1.0 - unbalance_ratio_penalty) if a1 > 0 else 0.0
-
     a2 = amps.get(2, 0.0)
-    misalignment_ratio = (a2 / a1) if a1 > 0 else 0.0
-    misalignment_severity = (a2 / baseline) if baseline > 0 else 0.0
-    misalignment_confidence = min(1.0, misalignment_ratio / 0.5) if misalignment_ratio > 0 else 0.0
 
-    strong_harmonics = [h for h, a in amps.items()
-                        if a > 0 and (a / baseline if baseline > 0 else 0) > 3]
+    if a1 > 0:
+        higher_harm_energy = sum(amps.get(h, 0.0) for h in range(2, n_harmonics + 1))
+        unbalance_ratio_penalty = higher_harm_energy / a1
+        unbalance_severity = a1 / baseline if baseline > 0 else 0.0
+        unbalance_confidence = max(0.0, 1.0 - unbalance_ratio_penalty)
+    else:
+        unbalance_severity = 0.0
+        unbalance_confidence = 0.0
+
+    if a2 > 0 and a1 > 0:
+        misalignment_ratio = a2 / a1
+        misalignment_severity = a2 / baseline if baseline > 0 else 0.0
+        misalignment_confidence = min(1.0, misalignment_ratio / 0.5)
+    elif a2 > 0:  
+        misalignment_severity = a2 / baseline if baseline > 0 else 0.0
+        misalignment_confidence = 0.50
+    else:
+        misalignment_severity = 0.0
+        misalignment_confidence = 0.0
+
+    strong_harmonics = [h for h, a in amps.items() if a > 0 and (a / baseline if baseline > 0 else 0) > 3.0]
     looseness_energy = sum(amps.values()) + subharmonic_amp
-    looseness_severity = (looseness_energy / baseline) if baseline > 0 else 0.0
-    looseness_confidence = min(1.0, len(strong_harmonics) / n_harmonics)
-    if subharmonic_amp > 0:
-        looseness_confidence = min(1.0, looseness_confidence + 0.2)
+    if len(strong_harmonics) >= 2 or has_sub:
+        looseness_severity = looseness_energy / baseline if baseline > 0 else 0.0
+        looseness_confidence = min(1.0, len(strong_harmonics) / n_harmonics + (0.2 if has_sub else 0.0))
+    else:
+        looseness_severity = 0.0
+        looseness_confidence = 0.0
 
     return {
         "unbalance": {"severity": round(unbalance_severity, 2),

@@ -103,7 +103,16 @@ def pick_primary_fault(
                     capped_sev = min(sev, 10.0) if sev > 0.0 else 1.0
                     base_score = conf * (capped_sev + (n_harmonics * 1.5))
 
-                    final_score = round(base_score * (1.5 if sidebands_detected else 1.0), 3)
+                    if fault_code.upper() == "BSF" and sidebands_detected:
+                        final_score = round(base_score * 2.0, 3)
+                    elif sidebands_detected:
+                        final_score = round(base_score * 1.5, 3)
+                    else:
+                        final_score = round(base_score, 3)
+
+                    # FTF (Cage Fault) is almost always a modulation component when raceway/ball damage exists
+                    if fault_code.upper() == "FTF":
+                        final_score = round(final_score * 0.6, 3)
 
                     entry = {
                         "name": f"{fault_name_tr} [{ch_name}]",
@@ -128,7 +137,6 @@ def pick_primary_fault(
                     else:
                         weak_candidates.append(entry)
 
-
     if reciprocating_diagnosis and isinstance(reciprocating_diagnosis, dict):
         for fault_key, data in reciprocating_diagnosis.items():
             if not isinstance(data, dict):
@@ -145,6 +153,7 @@ def pick_primary_fault(
                     "score": round(conf * (min(sev, 10.0) if sev > 0.0 else 1.0), 3),
                     "category": "reciprocating",
                     "sidebands_detected": False,
+                    "n_harmonics_matched": 0,
                     "details": data,
                 }
                 if conf >= 0.50:
@@ -152,8 +161,8 @@ def pick_primary_fault(
                 else:
                     weak_candidates.append(entry)
 
-    candidates.sort(key=lambda x: x["score"], reverse=True)
-    weak_candidates.sort(key=lambda x: x["score"], reverse=True)
+    candidates.sort(key=lambda x: (x.get("score", 0.0), x.get("severity", 0.0)), reverse=True)
+    weak_candidates.sort(key=lambda x: (x.get("score", 0.0), x.get("severity", 0.0)), reverse=True)
 
     if candidates:
         top = candidates[0]
@@ -165,6 +174,8 @@ def pick_primary_fault(
             "score": top["score"],
             "category": top["category"],
             "sidebands_detected": top.get("sidebands_detected", False),
+            "n_harmonics_matched": int(top.get("n_harmonics_matched", 0) or 0),
+            "dominant_channel": top.get("channel"),
             "all_faults": candidates,
             "weak_candidates": weak_candidates,
         }
@@ -178,6 +189,8 @@ def pick_primary_fault(
             "score": top["score"],
             "category": top["category"],
             "sidebands_detected": top.get("sidebands_detected", False),
+            "n_harmonics_matched": int(top.get("n_harmonics_matched", 0) or 0),
+            "dominant_channel": top.get("channel"),
             "all_faults": [],
             "weak_candidates": weak_candidates,
         }
@@ -190,6 +203,8 @@ def pick_primary_fault(
         "score": 0.0,
         "category": None,
         "sidebands_detected": False,
+        "n_harmonics_matched": 0,
+        "dominant_channel": None,
         "all_faults": [],
         "weak_candidates": [],
     }
