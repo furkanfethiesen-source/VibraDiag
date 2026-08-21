@@ -9,8 +9,9 @@ hybrid_search:
     model: "BAAI/bge-reranker-large"
     batch_size: 32
     top_k: 3
-    score_threshold: 0.35
-    visual_fallback_threshold: 0.35
+    score_threshold: 0.20
+    soft_fallback_floor: 0.10
+    visual_fallback_threshold: 0.20
     target_candidate_budget: 35
     min_candidates_per_subquery: 8
 

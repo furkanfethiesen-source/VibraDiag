@@ -24,7 +24,7 @@ llm:
   provider: "groq"
   model: "qwen/qwen3.6-27b"
   temperature: 0.2
-  max_tokens: 1024
+  max_tokens: 4096
   timeout: 60
 
 embeddings:
@@ -38,8 +38,13 @@ streamlit:
   page_title: "VibraDiag - Fault Diagnosis System"
   page_icon: "⚡"
   layout: "wide"
-  show_graph_state: false 
-  show_tool_calls: true 
+  show_graph_state: false
+  show_tool_calls: true
+  api_base_url: "http://localhost:8000"
+  default_machine_type: "rotating"
+  default_machine_class: "class_2"
+  default_fs: 12000
+  default_rpm: 1797
 
 logging:
   level: "INFO"                     
