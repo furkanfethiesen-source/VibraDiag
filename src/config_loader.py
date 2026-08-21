@@ -1,8 +1,11 @@
 
 import yaml
+from pathlib import Path
 from typing import Dict, Any
 from functools import lru_cache
 from pydantic import BaseModel
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 class AppConfig(BaseModel):
@@ -37,18 +40,19 @@ class PromptsConfig(BaseModel):
 
 @lru_cache(maxsize=1)
 def load_appcfg(config_path: str = "config/app.yaml") -> AppConfig:
-    with open(config_path, 'r') as f:
+    resolved = PROJECT_ROOT / config_path
+    with open(resolved, 'r') as f:
         return AppConfig(**yaml.safe_load(f))
 
 @lru_cache(maxsize=1)
 def load_retcfg(config_path: str = "config/retrieval.yaml") -> RetrievalConfig:
-    with open(config_path, 'r') as f:
+    resolved = PROJECT_ROOT / config_path
+    with open(resolved, 'r') as f:
         return RetrievalConfig(**yaml.safe_load(f))
 
 @lru_cache(maxsize=1)
 def load_prompts_cfg(config_path: str = "config/prompts.yaml") -> PromptsConfig:
-    with open(config_path, 'r') as f:
+    resolved = PROJECT_ROOT / config_path
+    with open(resolved, 'r') as f:
         return PromptsConfig(**yaml.safe_load(f))
-
-
 
