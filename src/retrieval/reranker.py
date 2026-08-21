@@ -33,42 +33,28 @@ class Reranker:
         model_name: str = "BAAI/bge-reranker-large",
         device: str = "mps",
         batch_size: int = 32,
-        score_threshold: float = 0.35,
+        score_threshold: float = 0.20,
+        soft_fallback_floor: float = 0.10,
     ):
-        logger.info(f"Reranker yükleniyor: {model_name} ({device})")
+        logger.info(f"Reranker yükleniyor: {model_name} ({device}) [threshold={score_threshold}, floor={soft_fallback_floor}]")
         self.model = CrossEncoder(model_name, device=device)
         self._model_name = model_name
         self._batch_size = batch_size
         self.score_threshold = score_threshold
-
-
+        self.soft_fallback_floor = soft_fallback_floor
 
     def rerank(
         self,
         query: str,
         candidates: dict[str, Any],
-        top_k: int = 2,
+        top_k: int = 3,
         score_threshold: float | None = None,
+        soft_fallback_floor: float | None = None,
         deduplicate_parents: bool = True,
     ) -> dict[str, Any]:
         """
         Candidate dokümanları cross-encoder ile yeniden skorlar ve threshold altındakileri süzer.
-
-        Parameters
-        ----------
-        query : str
-            Kullanıcı sorgusu.
-        candidates : dict
-            Retrieval results dict: ``{ids, documents, metadatas, distances}``.
-        top_k : int
-            Döndürülecek en iyi sonuç sayısı.
-        score_threshold : float | None
-            Skor alt eşik değeri. None ise constructor'daki değer kullanılır.
-
-        Returns
-        -------
-        dict
-            Aynı retrieval results dict formatı. ``distances`` = logits).
+        Eğer tüm adaylar threshold altında kalırsa, soft_fallback_floor (>=0.10) üzerindeki en iyi adayları kurtarır.
         """
         empty: dict[str, Any] = {
             "ids": [[]],
@@ -85,6 +71,7 @@ class Reranker:
             return empty
 
         threshold = score_threshold if score_threshold is not None else self.score_threshold
+        floor = soft_fallback_floor if soft_fallback_floor is not None else self.soft_fallback_floor
         pairs = [(query, str(doc)) for doc in documents]
         raw_scores: Any = self.model.predict(pairs, batch_size=self._batch_size)
 
@@ -104,7 +91,30 @@ class Reranker:
 
         scored.sort(key=lambda x: x["score"], reverse=True)
 
+        # 1. Standart Threshold Filtreleme (>= threshold)
         filtered = [item for item in scored if item["score"] >= threshold]
+
+        # 2. Kademeli Soft-Fallback Kontrolü (0.10 <= skor < threshold)
+        if not filtered and scored:
+            fallback_candidates = [item for item in scored if item["score"] >= floor]
+            if fallback_candidates:
+                best_score = fallback_candidates[0]["score"]
+                logger.info(
+                    f"Soft-fallback devrede: Skorlar threshold ({threshold:.2f}) altında kaldı, "
+                    f"ancak floor ({floor:.2f}) üzerindeki en iyi {min(len(fallback_candidates), top_k)} aday kurtarıldı "
+                    f"(En yüksek skor: {best_score:.3f} | query='{query[:40]}...')"
+                )
+                filtered = fallback_candidates
+            else:
+                # Last resort: unconditionally keep the top-1 candidate to
+                # prevent total information loss (Turkish/semantic queries on
+                # an English-trained model often produce low sigmoid scores).
+                logger.warning(
+                    f"Tüm adaylar floor ({floor:.2f}) altında. "
+                    f"En iyi aday koşulsuz olarak korunuyor "
+                    f"(score={scored[0]['score']:.3f} | query='{query[:40]}...')"
+                )
+                filtered = scored[:1]
 
         if deduplicate_parents:
             seen_parents: set[str] = set()
@@ -124,7 +134,7 @@ class Reranker:
             top = filtered[:top_k]
 
         logger.debug(
-            f"Rerank tamamlandı: {len(ids)} aday → {len(top)} sonuç (threshold={threshold:.2f}, dedup={deduplicate_parents}) | "
+            f"Rerank tamamlandı: {len(ids)} aday → {len(top)} sonuç (threshold={threshold:.2f}, floor={floor:.2f}, dedup={deduplicate_parents}) | "
             f"max_score={top[0]['score']:.3f} (raw={top[0]['raw_score']:.2f})" if top else "Rerank: boş sonuç"
         )
 
@@ -140,13 +150,20 @@ class Reranker:
         self,
         query: str,
         candidates: dict[str, Any],
-        top_k: int = 2,
+        top_k: int = 3,
         score_threshold: float | None = None,
+        soft_fallback_floor: float | None = None,
         deduplicate_parents: bool = True,
     ) -> dict[str, Any]:
         """Rerank'ın asenkron wrapper'ı — CPU-bound işlemi thread pool'a atar."""
         return await asyncio.to_thread(
-            self.rerank, query, candidates, top_k, score_threshold, deduplicate_parents
+            self.rerank,
+            query,
+            candidates,
+            top_k,
+            score_threshold,
+            soft_fallback_floor,
+            deduplicate_parents,
         )
 
     def __repr__(self) -> str:

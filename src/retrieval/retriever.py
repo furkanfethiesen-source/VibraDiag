@@ -95,9 +95,10 @@ class TextRetriever:
         self,
         query: str,
         rerank_top_k: int = 25,
-        final_top_k: int = 2,
+        final_top_k: int = 3,
         where: dict[str, Any] | None = None,
-        score_threshold: float | None = 0.0,
+        score_threshold: float | None = None,
+        soft_fallback_floor: float | None = None,
         deduplicate_parents: bool = True,
     ) -> dict[str, Any]:
         """
@@ -110,7 +111,12 @@ class TextRetriever:
         candidate_ids = candidates.get("ids", [[]])[0]
 
         reranked = self.reranker.rerank(
-            query, candidates, top_k=final_top_k, score_threshold=score_threshold, deduplicate_parents=deduplicate_parents
+            query,
+            candidates,
+            top_k=final_top_k,
+            score_threshold=score_threshold,
+            soft_fallback_floor=soft_fallback_floor,
+            deduplicate_parents=deduplicate_parents,
         )
 
         distances = reranked.get("distances", [[]])[0]
@@ -144,16 +150,22 @@ class TextRetriever:
         self,
         query: str,
         rerank_top_k: int = 25,
-        final_top_k: int = 2,
+        final_top_k: int = 3,
         where: dict[str, Any] | None = None,
-        score_threshold: float | None = 0.0,
+        score_threshold: float | None = None,
+        soft_fallback_floor: float | None = None,
         deduplicate_parents: bool = True,
     ) -> dict[str, Any]:
         """`search_with_rerank` metodunun asenkron versiyonu — reranker asenkron çalışır."""
         candidates = self.search(query, n_results=rerank_top_k, where=where)
         candidate_ids = candidates.get("ids", [[]])[0]
         reranked = await self.reranker.arerank(
-            query, candidates, top_k=final_top_k, score_threshold=score_threshold, deduplicate_parents=deduplicate_parents
+            query,
+            candidates,
+            top_k=final_top_k,
+            score_threshold=score_threshold,
+            soft_fallback_floor=soft_fallback_floor,
+            deduplicate_parents=deduplicate_parents,
         )
 
         distances = reranked.get("distances", [[]])[0]
@@ -430,7 +442,7 @@ class RetrievalGraph:
         threshold = state.get("threshold", self.threshold)
         max_score = state.get("max_text_score", 0.0)
 
-        if max_score < threshold:
+        if max_score <= 0.0 or max_score < threshold:
             logger.info(
                 f"Visual fallback tetiklendi: max_score ({max_score:.3f}) < threshold ({threshold})"
             )
@@ -468,8 +480,10 @@ class RetrievalGraph:
         text_results = state.get("text_results", {})
         visual_results = state.get("visual_results")
         excluded_ids = set(state.get("excluded_chunk_ids") or [])
-
-        text_passages = self._extract_passages(text_results)
+        if state.get("text_passages"):
+            text_passages = list(state["text_passages"])
+        else:
+            text_passages = self._extract_passages(text_results)
         if excluded_ids:
             text_passages = [p for p in text_passages if p.get("id") not in excluded_ids]
 
