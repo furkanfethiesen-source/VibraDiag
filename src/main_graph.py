@@ -7,7 +7,7 @@ Combines:
 2. Deterministic Signal Processing SubGraph (Kurtogram, Rotating/Reciprocating Expert, ISO 2372 / VDI 2056).
 3. Diagnostic Plot Generation (FFT Spectrum, Kurtogram Heatmap).
 4. Hybrid Vector & Decomposed RAG Retrieval (Dense + BM42 Sparse + Parent-Child DocStore + Reranker).
-5. Groq Llama-3.3-70b Generation Engine (with ISO Zone D Emergency Directive & Signal Injection).
+5. Groq Qwen 3.6-27b Generation Engine (with ISO Zone D Emergency Directive & Signal Injection).
 6. Multi-tiered Self-Corrector Verification Loop (DSP Fast-Fail, Gemini Faithfulness/Relevance, Dynamic Query Reformulation).
 7. LangGraph State Persistence (MemorySaver Checkpointer support).
 """
@@ -39,7 +39,17 @@ from self_corrector.corrector_node import self_corrector_node
 
 logger = logging.getLogger(__name__)
 
+_default_qdrant_client: Any | None = None
 _default_retrieval_graph: RetrievalGraph | None = None
+
+
+def get_default_qdrant_client(qdrant_path: str = "./qdrant_data") -> Any:
+    """Returns singleton QdrantClient instance to prevent file lock contention."""
+    global _default_qdrant_client
+    if _default_qdrant_client is None:
+        from qdrant_client import QdrantClient
+        _default_qdrant_client = QdrantClient(path=qdrant_path)
+    return _default_qdrant_client
 
 
 def get_default_retrieval_graph() -> RetrievalGraph:
@@ -59,7 +69,6 @@ def get_default_retrieval_graph() -> RetrievalGraph:
         from retrieval.sparse_encoder import SparseEncoder
         from query_decomposer.classifier import QueryComplexityClassifier
         from query_decomposer.llm_decomposer import LLMDecomposer
-        from qdrant_client import QdrantClient
 
         try:
             app_cfg = load_appcfg()
@@ -68,7 +77,8 @@ def get_default_retrieval_graph() -> RetrievalGraph:
             device = getattr(app_cfg, "embeddings", {}).get("device", "mps")
             reranker_cfg = getattr(ret_cfg, "hybrid_search", {}).get("reranker", {})
             rerank_model = reranker_cfg.get("model", "BAAI/bge-reranker-large")
-            threshold = reranker_cfg.get("score_threshold", 0.35)
+            threshold = reranker_cfg.get("score_threshold", 0.20)
+            floor = reranker_cfg.get("soft_fallback_floor", 0.10)
             qdrant_path = getattr(app_cfg, "paths", {}).get("qdrant_persist_path", "./qdrant_data")
             docstore_path = getattr(app_cfg, "paths", {}).get("docstore_path", "./docstore.db")
         except Exception as e:
@@ -76,17 +86,18 @@ def get_default_retrieval_graph() -> RetrievalGraph:
             embed_model = "BAAI/bge-m3"
             device = "cpu"
             rerank_model = "BAAI/bge-reranker-large"
-            threshold = 0.35
+            threshold = 0.20
+            floor = 0.10
             qdrant_path = "./qdrant_data"
             docstore_path = "./docstore.db"
 
         embedder = Embedder(model_name=embed_model, device=device)
         sparse_encoder = SparseEncoder()
         docstore = DocStore(persist_path=docstore_path)
-        qdrant_client = QdrantClient(path=qdrant_path)
+        qdrant_client = get_default_qdrant_client(qdrant_path=qdrant_path)
         text_vector_db = TextChildQdrantDB(client=qdrant_client, sparse_encoder=sparse_encoder)
         visual_vector_db = VisualQdrantDB(client=qdrant_client)
-        reranker = Reranker(model_name=rerank_model, device=device, score_threshold=threshold)
+        reranker = Reranker(model_name=rerank_model, device=device, score_threshold=threshold, soft_fallback_floor=floor)
 
         text_retriever = TextRetriever(
             embedder=embedder,
@@ -320,10 +331,11 @@ def retrieval_node(
             "visual_evidence": filtered_visual,
             "merged_context": merged_context,
             "sub_query_passages": ret_result.get("sub_query_passages"),
+            "sub_queries": ret_result.get("sub_queries"),
             "max_text_score": ret_result.get("max_text_score", 0.0),
         }
     except Exception as e:
-        logger.error("retrieval_node execution failed: %s", e, exc_info=True)
+        logger.error(f"retrieval_node execution failed for query '{search_query}': {e}", exc_info=True)
         return {
             "errors": [f"Retrieval hatası: {e}"],
             "text_passages": [],
