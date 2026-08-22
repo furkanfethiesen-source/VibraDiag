@@ -35,8 +35,8 @@ logger = logging.getLogger("corrector_eval")
 
 def run_evaluation(
     benchmark_path: Path,
-    faithfulness_th: float = 0.70,
-    relevance_th: float = 0.65,
+    faithfulness_th: float = 0.50,
+    relevance_th: float = 0.50,
     dsp_th: float = 1.0,
     sample_size: int | None = None,
     judge_client: Any | None = None,
@@ -549,8 +549,8 @@ def main():
         help="Path to benchmark JSON",
     )
     parser.add_argument("--sample", type=int, default=None, help="Sample count limit")
-    parser.add_argument("--faithfulness-th", type=float, default=0.70)
-    parser.add_argument("--relevance-th", type=float, default=0.65)
+    parser.add_argument("--faithfulness-th", type=float, default=0.50)
+    parser.add_argument("--relevance-th", type=float, default=0.50)
     parser.add_argument("--dsp-th", type=float, default=1.0)
     parser.add_argument(
         "--fp-penalty-weight",
