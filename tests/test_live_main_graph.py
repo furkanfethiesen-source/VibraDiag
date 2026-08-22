@@ -42,9 +42,9 @@ if str(SRC_DIR) not in sys.path:
 import plotly.graph_objects as go
 from loguru import logger
 
-from config_loader import load_appcfg
-from main_graph import build_main_graph
-from schemas.states import VibraDiagMainState
+from src.config_loader import load_appcfg
+from src.main_graph import build_main_graph
+from src.schemas.states import VibraDiagMainState
 
 _app_cfg = load_appcfg()
 _paths_cfg = getattr(_app_cfg, "paths", {}) or {}
@@ -64,7 +64,7 @@ def save_interactive_plots(
     prefix: str = "signal_only",
 ) -> dict[str, str]:
     """
-    Extracts or saves Plotly interactive HTML files, returning relative paths.
+    Extracts existing Plotly interactive HTML file paths, saving figures only if not already saved.
     """
     if not plots_dict:
         logger.warning("No diagnostic plots found in state to save.")
@@ -72,30 +72,35 @@ def save_interactive_plots(
 
     saved_files = {}
 
+    has_existing_paths = False
     for plot_name, plot_val in plots_dict.items():
         if isinstance(plot_val, (str, Path)):
             p = Path(plot_val)
             if p.exists():
+                has_existing_paths = True
                 try:
                     rel_path = str(p.relative_to(PROJECT_ROOT))
                 except ValueError:
                     rel_path = str(p)
                 saved_files[f"{plot_name}_html" if not plot_name.endswith("_html") and not plot_name.endswith("_path") else plot_name] = rel_path
-        elif isinstance(plot_val, dict):
-            try:
-                fig = go.Figure(plot_val)
-                html_filename = f"{prefix}_{plot_name}.html"
-                html_path = output_dir / html_filename
-                fig.write_html(str(html_path), include_plotlyjs="cdn")
-                logger.info("Saved interactive plot: %s", html_path)
-                saved_files[f"{plot_name}_html"] = str(html_path.relative_to(PROJECT_ROOT))
-            except Exception as e:
-                logger.error("Failed to save plot '%s': %s", plot_name, e)
+
+    if not has_existing_paths:
+        for plot_name, plot_val in plots_dict.items():
+            if isinstance(plot_val, dict):
+                try:
+                    fig = go.Figure(plot_val)
+                    html_filename = f"{prefix}_{plot_name}.html"
+                    html_path = output_dir / html_filename
+                    fig.write_html(str(html_path), include_plotlyjs="cdn")
+                    logger.info("Saved interactive plot: %s", html_path)
+                    saved_files[f"{plot_name}_html"] = str(html_path.relative_to(PROJECT_ROOT))
+                except Exception as e:
+                    logger.error("Failed to save plot '%s': %s", plot_name, e)
 
     return saved_files
 
 
-from deterministic_tools.fault_analyzer import pick_primary_fault
+from src.deterministic_tools.fault_analyzer import pick_primary_fault
 
 
 def extract_detected_metadata(
