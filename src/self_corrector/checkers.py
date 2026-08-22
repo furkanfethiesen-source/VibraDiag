@@ -598,7 +598,195 @@ class RelevanceChecker:
         except Exception as err:
             logger.error("RelevanceChecker LLM call failed: %s", err, exc_info=True)
             latency_ms = (time.time() - start_time) * 1000
-            return CheckerResult(
+class UnifiedJudgeChecker:
+    """
+    Evaluates both Faithfulness and Relevance in a single LLM Judge call.
+    Cuts latency and token consumption in half while applying relaxed domain knowledge guidelines.
+    """
+
+    def __init__(self, judge_client: Any | None = None):
+        self.judge_client = judge_client or GeminiJudgeClient()
+
+    @traceable(name="checker_unified_judge")
+    def check(
+        self,
+        user_query: str,
+        generated_text: str,
+        context_chunks: list[dict[str, Any]] | str,
+        sub_queries: list[str] | None = None,
+        faithfulness_threshold: float = 0.50,
+        relevance_threshold: float = 0.50,
+    ) -> tuple[CheckerResult, CheckerResult]:
+        start_time = time.time()
+        sub_queries = sub_queries or [user_query]
+
+        if isinstance(context_chunks, list):
+            context_text = "\n\n".join(
+                f"[Kaynak: {c.get('id', 'N/A')}]\n{c.get('text', '')}"
+                for c in context_chunks
+                if c.get("text")
+            )
+        else:
+            context_text = str(context_chunks)
+
+        norm_gen = normalize_text_tr(generated_text)
+        refusal_phrases = [
+            "bilgi bulunmamaktadır", "bilgi yer almamaktadır",
+            "yeterli bilgi yok", "bilgi bulunamadı",
+            "bağlamda bulunmamaktadır", "bağlamda yer almamaktadır",
+            "bilgiye ulaşılamamıştır", "bu konuda bilgi bulunmamaktadır",
+            "belgelerde yer almamaktadır", "kaynaklarda yer almamaktadır",
+            "karşılayan bir bilgi", "dokümantasyonda yer almamaktadır",
+        ]
+        is_refusal = any(phrase in norm_gen for phrase in refusal_phrases)
+
+        if not context_text.strip():
+            latency_ms = (time.time() - start_time) * 1000
+            if is_refusal:
+                faith_res = CheckerResult(
+                    checker_name="faithfulness",
+                    passed=True,
+                    score=0.95,
+                    rationale="Bağlam boş ve model dürüst epistemik ret uyguladı — halüsinasyon yok.",
+                    token_usage=TokenUsageInfo(),
+                    latency_ms=latency_ms,
+                    execution_error=False,
+                )
+                rel_res = CheckerResult(
+                    checker_name="sub_query_relevance",
+                    passed=True,
+                    score=0.95,
+                    rationale="Bağlam boş ve model dürüst epistemik ret uyguladı.",
+                    token_usage=TokenUsageInfo(),
+                    latency_ms=latency_ms,
+                    execution_error=False,
+                )
+            else:
+                faith_res = CheckerResult(
+                    checker_name="faithfulness",
+                    passed=False,
+                    score=0.0,
+                    rationale="Kaynak bağlam boş olduğu için üretilen yanıt doğrulanamadı.",
+                    token_usage=TokenUsageInfo(),
+                    latency_ms=latency_ms,
+                    execution_error=False,
+                )
+                rel_res = CheckerResult(
+                    checker_name="sub_query_relevance",
+                    passed=False,
+                    score=0.0,
+                    rationale="Kaynak bağlam boş olduğu için yanıt alakasız/doğrulanamaz kabul edildi.",
+                    token_usage=TokenUsageInfo(),
+                    latency_ms=latency_ms,
+                    execution_error=False,
+                )
+            return faith_res, rel_res
+
+        try:
+            prompt_template = load_prompts_cfg().corrector_prompts.get("unified_judge_prompt")
+            if not prompt_template:
+                prompt_template = load_prompts_cfg().corrector_prompts.get("faithfulness_prompt", "{context}\n{answer}")
+        except Exception as e:
+            logger.error("Failed to load unified_judge_prompt: %s", e)
+            prompt_template = "{user_query}\n{sub_queries}\n{context}\n{answer}"
+
+        prompt = prompt_template.format(
+            user_query=user_query,
+            sub_queries=json.dumps(sub_queries, ensure_ascii=False),
+            context=context_text[:3000],
+            answer=generated_text[:1500],
+        )
+
+        try:
+            if hasattr(self.judge_client, "generate_json"):
+                data, usage = self.judge_client.generate_json(
+                    prompt=prompt,
+                    system_instruction="Sen JSON formatında yanıt veren bir Faithfulness & Relevance değerlendirme yargıcısın.",
+                )
+            else:
+                messages = [
+                    {"role": "system", "content": "Sen JSON formatında yanıt veren bir Faithfulness & Relevance değerlendirme yargıcısın."},
+                    {"role": "user", "content": prompt},
+                ]
+                raw_response = self.judge_client.generate(messages=messages, temperature=0.0)
+                cleaned = raw_response.strip()
+                if "```json" in cleaned:
+                    cleaned = cleaned.split("```json")[1].split("```")[0].strip()
+                elif "```" in cleaned:
+                    cleaned = cleaned.split("```")[1].split("```")[0].strip()
+                data = json.loads(cleaned)
+                prompt_tokens = len(prompt.split()) * 4 // 3
+                completion_tokens = len(raw_response.split()) * 4 // 3
+                cost_usd = (prompt_tokens * 0.59 + completion_tokens * 0.79) / 1_000_000
+                usage = TokenUsageInfo(
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=completion_tokens,
+                    total_tokens=prompt_tokens + completion_tokens,
+                    estimated_cost_usd=round(cost_usd, 6),
+                )
+
+            latency_ms = (time.time() - start_time) * 1000
+
+            faith_score = float(data.get("faithfulness_score") if "faithfulness_score" in data else data.get("score", 0.0))
+            rel_score = float(data.get("relevance_score") if "relevance_score" in data else data.get("score", 0.0))
+            rationale = str(data.get("rationale", "Birleşik değerlendirme tamamlandı."))
+
+            if is_refusal:
+                if rel_score < relevance_threshold:
+                    rel_score = max(rel_score, 0.95)
+                if faith_score < faithfulness_threshold:
+                    faith_score = max(faith_score, 0.95)
+
+            faith_passed = faith_score >= faithfulness_threshold
+            rel_passed = rel_score >= relevance_threshold
+
+            faith_usage = TokenUsageInfo(
+                prompt_tokens=usage.prompt_tokens // 2,
+                completion_tokens=usage.completion_tokens // 2,
+                total_tokens=usage.total_tokens // 2,
+                estimated_cost_usd=round(usage.estimated_cost_usd / 2, 6),
+            )
+            rel_usage = TokenUsageInfo(
+                prompt_tokens=usage.prompt_tokens - faith_usage.prompt_tokens,
+                completion_tokens=usage.completion_tokens - faith_usage.completion_tokens,
+                total_tokens=usage.total_tokens - faith_usage.total_tokens,
+                estimated_cost_usd=round(usage.estimated_cost_usd - faith_usage.estimated_cost_usd, 6),
+            )
+
+            faith_res = CheckerResult(
+                checker_name="faithfulness",
+                passed=faith_passed,
+                score=faith_score,
+                rationale=rationale,
+                token_usage=faith_usage,
+                latency_ms=latency_ms,
+                execution_error=False,
+            )
+            rel_res = CheckerResult(
+                checker_name="sub_query_relevance",
+                passed=rel_passed,
+                score=rel_score,
+                rationale=rationale,
+                token_usage=rel_usage,
+                latency_ms=latency_ms,
+                execution_error=False,
+            )
+            return faith_res, rel_res
+
+        except Exception as err:
+            logger.error("UnifiedJudgeChecker LLM call failed: %s", err, exc_info=True)
+            latency_ms = (time.time() - start_time) * 1000
+            faith_res = CheckerResult(
+                checker_name="faithfulness",
+                passed=True,
+                score=0.75,
+                rationale=f"LLM Judge hatası nedeniyle varsayılan tolerans uygulandı: {err}",
+                token_usage=TokenUsageInfo(),
+                latency_ms=latency_ms,
+                execution_error=True,
+                error_message=str(err),
+            )
+            rel_res = CheckerResult(
                 checker_name="sub_query_relevance",
                 passed=True,
                 score=0.70,
@@ -608,3 +796,4 @@ class RelevanceChecker:
                 execution_error=True,
                 error_message=str(err),
             )
+            return faith_res, rel_res

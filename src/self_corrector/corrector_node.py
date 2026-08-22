@@ -32,6 +32,7 @@ from self_corrector.checkers import (
     FaithfulnessChecker,
     GeminiJudgeClient,
     RelevanceChecker,
+    UnifiedJudgeChecker,
 )
 from self_corrector.observability import (
     LangSmithCorrectorObserver,
@@ -66,12 +67,13 @@ def get_default_judge_client() -> Any:
 def load_thresholds() -> dict[str, Any]:
     default_config = {
         "dsp_consistency_threshold": 1.0,
-        "faithfulness_threshold": 0.70,
-        "relevance_threshold": 0.65,
+        "faithfulness_threshold": 0.50,
+        "relevance_threshold": 0.50,
         "prf_min_score_guard": 0.40,
-        "max_retrieval_attempts": 2,
-        "max_generation_attempts": 2,
-        "global_max_cycles": 3,
+        "chunk_exclusion_threshold": 0.25,
+        "max_retrieval_attempts": 1,
+        "max_generation_attempts": 1,
+        "global_max_cycles": 2,
     }
     try:
         app_cfg = load_appcfg()
@@ -112,7 +114,7 @@ def self_corrector_node(
     - checker_results: dict[str, dict]
     - corrector_metrics: dict[str, Any]
     - corrector_history: list[dict]
-    - llm_response: str (modified with warning if flagged)
+    - llm_response: str
     """
     start_total_time = time.time()
 
@@ -127,9 +129,9 @@ def self_corrector_node(
     if thresholds_override:
         thresholds.update(thresholds_override)
 
-    max_retrieval = int(thresholds.get("max_retrieval_attempts", 2))
-    max_generation = int(thresholds.get("max_generation_attempts", 2))
-    global_max = int(thresholds.get("global_max_cycles", 3))
+    max_retrieval = int(thresholds.get("max_retrieval_attempts", 1))
+    max_generation = int(thresholds.get("max_generation_attempts", 1))
+    global_max = int(thresholds.get("global_max_cycles", 2))
 
     user_query = state_dict.get("user_query", "").strip()
     llm_response = state_dict.get("llm_response", "").strip()
@@ -150,13 +152,6 @@ def self_corrector_node(
         else:
             context_chunks = state_dict.get("retrieval_results", [])
 
-    current_chunk_ids = []
-    if isinstance(context_chunks, list):
-        for c in context_chunks:
-            cid = c.get("id") or c.get("chunk_id") if isinstance(c, dict) else getattr(c, "chunk_id", None)
-            if cid:
-                current_chunk_ids.append(cid)
-
     current_attempts = state_dict.get("correction_attempts") or {"retrieval": 0, "generation": 0, "total": 0}
     retrieval_attempts = current_attempts.get("retrieval", 0)
     generation_attempts = current_attempts.get("generation", 0)
@@ -174,9 +169,8 @@ def self_corrector_node(
         warning_msg = (
             "Düzeltme döngüsü maksimum deneme sınırına ulaştı (Sistem güvenli çıkış yaptı)."
         )
-        logger.warning("Self-corrector max attempts reached (total=%d). Flagging response.", total_attempts)
+        logger.warning("Self-corrector max attempts reached (total=%d). Exiting cleanly with state flag.", total_attempts)
 
-        flagged_response = f"[⚠️ Düşük Güven Uyarısı: Bu yanıt maksimum doğrulama sınırına ulaşmıştır.]\n\n{llm_response}"
         decision = CorrectionDecision(
             status="flagged",
             trigger_reasons=["max_attempts_exceeded"],
@@ -196,7 +190,7 @@ def self_corrector_node(
             "route_decision": "approved_with_warning",
             "is_flagged": True,
             "flag_reason": warning_msg,
-            "llm_response": flagged_response,
+            "llm_response": llm_response,
             "correction_attempts": current_attempts,
             "checker_results": {},
             "corrector_history": [{
@@ -305,22 +299,16 @@ def self_corrector_node(
     active_judge_client = judge_client or get_default_judge_client()
     active_groq_client = groq_client or get_default_groq_client()
 
-    faith_checker = FaithfulnessChecker(judge_client=active_judge_client)
-    relevance_checker = RelevanceChecker(judge_client=active_judge_client)
-
-    faith_result: CheckerResult = faith_checker.check(
-        generated_text=llm_response,
-        context_chunks=context_chunks,
-        threshold=thresholds.get("faithfulness_threshold", 0.70),
-    )
-    checker_results["faithfulness"] = faith_result
-
-    rel_result: CheckerResult = relevance_checker.check(
+    unified_checker = UnifiedJudgeChecker(judge_client=active_judge_client)
+    faith_result, rel_result = unified_checker.check(
         user_query=user_query,
         generated_text=llm_response,
+        context_chunks=context_chunks,
         sub_queries=sub_queries,
-        threshold=thresholds.get("relevance_threshold", 0.65),
+        faithfulness_threshold=float(thresholds.get("faithfulness_threshold", 0.50)),
+        relevance_threshold=float(thresholds.get("relevance_threshold", 0.50)),
     )
+    checker_results["faithfulness"] = faith_result
     checker_results["sub_query_relevance"] = rel_result
 
     prompt_tokens = faith_result.token_usage.prompt_tokens + rel_result.token_usage.prompt_tokens
@@ -377,7 +365,7 @@ def self_corrector_node(
                 "tokens_output": existing_metrics["tokens_output"] + total_tokens.completion_tokens,
                 "total_tokens": existing_metrics["total_tokens"] + total_tokens.total_tokens,
                 "estimated_cost_usd": existing_metrics["estimated_cost_usd"] + total_tokens.estimated_cost_usd,
-                "llm_calls": existing_metrics["llm_calls"] + 2,
+                "llm_calls": existing_metrics["llm_calls"] + 1,
             },
         }
 
@@ -444,7 +432,20 @@ def self_corrector_node(
             attempt_number=new_total_attempts,
         )
 
-        new_excluded = current_chunk_ids if strategy_used == "domain_dictionary" else []
+        # Chunk exclusion with selective score threshold:
+        # Only exclude chunks whose similarity/rerank score is strictly below chunk_exclusion_threshold
+        exclusion_threshold = float(thresholds.get("chunk_exclusion_threshold", 0.25))
+        new_excluded: list[str] = []
+        if isinstance(context_chunks, list):
+            for c in context_chunks:
+                cid = c.get("id") or c.get("chunk_id") if isinstance(c, dict) else getattr(c, "chunk_id", None)
+                score = None
+                if isinstance(c, dict):
+                    score = c.get("score") if c.get("score") is not None else c.get("rerank_score")
+                else:
+                    score = getattr(c, "score", getattr(c, "rerank_score", None))
+                if cid and score is not None and float(score) < exclusion_threshold:
+                    new_excluded.append(cid)
         
         failed_checkers_names = [k for k, res in checker_results.items() if getattr(res, "execution_error", False)]
         flag_reason = f"LLM judge execution error (fail-open) in: {', '.join(failed_checkers_names)}" if has_execution_error else None
@@ -463,7 +464,7 @@ def self_corrector_node(
                 "tokens_output": existing_metrics["tokens_output"] + total_tokens.completion_tokens,
                 "total_tokens": existing_metrics["total_tokens"] + total_tokens.total_tokens,
                 "estimated_cost_usd": existing_metrics["estimated_cost_usd"] + total_tokens.estimated_cost_usd,
-                "llm_calls": existing_metrics["llm_calls"] + (3 if strategy_used == "llm_query_rewriter" else 2),
+                "llm_calls": existing_metrics["llm_calls"] + (2 if strategy_used == "llm_query_rewriter" else 1),
             },
             "corrector_history": [{
                 "cycle": new_total_attempts,

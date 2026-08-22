@@ -6,6 +6,7 @@ from .checkers import (
     DSPConsistencyChecker,
     FaithfulnessChecker,
     RelevanceChecker,
+    UnifiedJudgeChecker,
 )
 from .corrector_node import self_corrector_node
 from .observability import (
@@ -23,6 +24,7 @@ __all__ = [
     "DSPConsistencyChecker",
     "FaithfulnessChecker",
     "RelevanceChecker",
+    "UnifiedJudgeChecker",
     "DomainDictionaryExpansion",
     "PseudoRelevanceFeedback",
     "QueryRewriter",
