@@ -1,0 +1,3 @@
+"""
+VibraDiag UI module.
+"""

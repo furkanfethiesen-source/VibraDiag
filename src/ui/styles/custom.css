@@ -1,0 +1,244 @@
+/* 
+  VibraDiag Premium Dark Theme
+  Primary colors: Premium bright-grey (#B8B8B8, #D4D4D4) + gold (#C9A84C, #D4AF37, #F0D060)
+  Background: Deep charcoal (#0E1117, #1A1D24, #262730)
+*/
+
+:root {
+  /* Colors */
+  --color-primary-bg: #0E1117;
+  --color-card-bg: #1A1D24;
+  --color-sidebar-bg: #262730;
+  
+  --color-text-main: #D4D4D4;
+  --color-text-muted: #B8B8B8;
+  
+  --color-gold-light: #F0D060;
+  --color-gold: #D4AF37;
+  --color-gold-dark: #C9A84C;
+  --color-gold-dim: rgba(201, 168, 76, 0.3);
+  --color-gold-faint: rgba(201, 168, 76, 0.15);
+  
+  --color-success: #22c55e;
+  --color-info: #3b82f6;
+  --color-warning: #D4AF37;
+  --color-danger: #ef4444;
+  
+  /* Fonts */
+  --font-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Global Font */
+html, body, [class*="css"] {
+  font-family: var(--font-base);
+  color: var(--color-text-main);
+}
+
+/* Headings with Gold Accents */
+h1, h2, h3 {
+  color: var(--color-gold) !important;
+}
+
+/* 1. Sticky header bar */
+.stMainBlockContainer > div:first-child {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: linear-gradient(to bottom, var(--color-card-bg), var(--color-primary-bg));
+  border-bottom: 1px solid var(--color-gold-dim);
+}
+
+/* 4. Header container */
+.header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(to right, var(--color-card-bg), var(--color-primary-bg));
+  border-bottom: 1px solid var(--color-gold-dim);
+}
+
+/* 2. Header badge (.severity-badge) */
+.severity-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+  text-transform: uppercase;
+}
+
+.severity-zone-a { background-color: var(--color-success); }
+.severity-zone-b { background-color: var(--color-info); }
+.severity-zone-c { background-color: var(--color-warning); color: #000; }
+.severity-zone-d { background-color: var(--color-danger); }
+
+/* 3. Status indicator (.status-dot) */
+.status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+.status-dot.ok {
+  background-color: var(--color-success);
+  animation: pulse-green 2s infinite;
+}
+.status-dot.error {
+  background-color: var(--color-danger);
+  animation: pulse-red 2s infinite;
+}
+
+/* 5. Diagnostic card */
+.diagnostic-card {
+  border: 1px solid rgba(201, 168, 76, 0.2);
+  border-radius: 12px;
+  background-color: var(--color-card-bg);
+  padding: 1rem;
+  box-shadow: 0 4px 6px rgba(201, 168, 76, 0.05);
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* 6. File chip */
+.file-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 20px;
+  background-color: var(--color-gold-faint);
+  border: 1px solid var(--color-gold-dim);
+  padding: 6px 14px;
+  color: var(--color-gold);
+  font-size: 0.9rem;
+  margin: 4px;
+}
+
+/* 8. Metric cards */
+.metric-card {
+  background-color: var(--color-card-bg);
+  border-left: 3px solid var(--color-gold);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 1rem;
+}
+
+/* 13. Streamlit element overrides */
+/* Text inputs */
+.stTextInput label {
+  color: var(--color-text-muted) !important;
+}
+
+/* Selectbox */
+.stSelectbox > div > div[data-baseweb="select"]:focus-within {
+  border-color: var(--color-gold) !important;
+  box-shadow: 0 0 0 1px var(--color-gold) !important;
+}
+
+/* Buttons */
+.stButton > button[kind="primary"] {
+  background-color: var(--color-gold);
+  color: #0E1117;
+  border: none;
+  font-weight: 600;
+}
+.stButton > button[kind="primary"]:hover {
+  background-color: var(--color-gold-light);
+  color: #0E1117;
+}
+
+/* File Uploader */
+[data-testid="stFileUploadDropzone"] {
+  border: 2px dashed var(--color-gold-dim) !important;
+  background-color: rgba(201, 168, 76, 0.05);
+}
+[data-testid="stFileUploadDropzone"]:hover {
+  border-color: var(--color-gold) !important;
+}
+
+/* Metrics */
+[data-testid="stMetricValue"] {
+  color: #fff !important;
+}
+[data-testid="stMetricDelta"] {
+  color: var(--color-gold) !important;
+}
+[data-testid="stMetricDelta"] svg {
+  fill: var(--color-gold) !important;
+}
+
+/* 7. Custom progress bars */
+.stProgress > div > div > div > div {
+  background-image: linear-gradient(to right, var(--color-gold-dark), var(--color-gold-light));
+}
+.progress-danger .stProgress > div > div > div > div {
+  background-image: linear-gradient(to right, #991b1b, var(--color-danger));
+}
+.progress-warning .stProgress > div > div > div > div {
+  background-image: linear-gradient(to right, #b45309, var(--color-warning));
+}
+
+/* 9. Chat message styling */
+[data-testid="stChatMessage"] {
+  background-color: var(--color-primary-bg);
+  border: 1px solid var(--color-sidebar-bg);
+  border-radius: 12px;
+  padding: 1rem;
+}
+[data-testid="stChatMessage"][data-testid*="user"] {
+  background-color: var(--color-card-bg);
+  border-color: var(--color-gold-dim);
+}
+
+/* 11. Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-primary-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-text-muted);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gold);
+}
+
+/* 12. Sidebar gold accent */
+[data-testid="stSidebar"] {
+  background-color: var(--color-sidebar-bg);
+  border-right: 1px solid var(--color-card-bg);
+  border-top: 3px solid var(--color-gold);
+}
+
+/* 15. Animations */
+@keyframes pulse-green {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+@keyframes pulse-red {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+.loading-shimmer {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(to right, var(--color-card-bg) 4%, var(--color-sidebar-bg) 25%, var(--color-card-bg) 36%);
+  background-size: 1000px 100%;
+}
