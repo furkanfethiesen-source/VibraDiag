@@ -52,7 +52,7 @@ def render_fault_panel(diagnosis_response: dict) -> None:
 
     # 2. Section 1: Bearing Faults (Envelope Spectrum)
     st.markdown("### 🎯 Rulman Frekans Eşleşmesi")
-    st.caption("Zarf spektrumunda teorik harmonik (1X, 2X, 3X) eşleşme oranı")
+    st.caption("Zarf spektrumu arıza güveni ve harmonik eşleşme oranları")
 
     has_multichannel = len({f.get("channel") for f in bearing_faults if f.get("channel")}) > 1
 
@@ -66,12 +66,16 @@ def render_fault_panel(diagnosis_response: dict) -> None:
             pct = int(round(conf * 100))
             n_harm = fault.get("n_harmonics_matched")
 
-            is_dominant = (idx == 0) or (channel and channel == dominant_channel and abbr == fault_type_abbr)
+            is_primary_type = (abbr == fault_type_abbr)
+            is_dominant = is_primary_type and ((channel and channel == dominant_channel) or idx == 0)
 
             label_parts = [abbr] if abbr else []
             if channel:
-                channel_desc = " (Ana)" if is_dominant else " (İletim)"
-                label_parts.append(f"[{channel}{channel_desc}]")
+                if is_primary_type:
+                    channel_desc = " (Ana)" if is_dominant else " (İletim)"
+                    label_parts.append(f"[{channel}{channel_desc}]")
+                else:
+                    label_parts.append(f"[{channel}]")
             label_str = " ".join(label_parts) if label_parts else name
 
             harm_str = f" • {n_harm}/3 harm" if n_harm is not None else ""
