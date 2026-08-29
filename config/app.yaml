@@ -22,10 +22,11 @@ api:
 
 llm:
   provider: "groq"
-  model: "qwen/qwen3.6-27b"
+  model: "openai/gpt-oss-120b"
   temperature: 0.2
   max_tokens: 4096
   timeout: 60
+  reasoning_format: "parsed"
 
 embeddings:
   provider: "HuggingFaceEmbeddings"
@@ -84,9 +85,10 @@ decomposer:
 
 self_corrector:
   dsp_consistency_threshold: 1.0
-  faithfulness_threshold: 0.70
-  relevance_threshold: 0.65
+  faithfulness_threshold: 0.50
+  relevance_threshold: 0.50
   prf_min_score_guard: 0.40
-  max_retrieval_attempts: 2
-  max_generation_attempts: 2
-  global_max_cycles: 3
+  chunk_exclusion_threshold: 0.25
+  max_retrieval_attempts: 1
+  max_generation_attempts: 1
+  global_max_cycles: 2
