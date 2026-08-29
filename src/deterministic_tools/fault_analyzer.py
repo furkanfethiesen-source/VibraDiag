@@ -99,14 +99,11 @@ def pick_primary_fault(
                         "FTF": "Kafes Arızası (FTF)",
                     }.get(fault_code.upper(), f"Rulman {fault_code.upper()} Arızası")
 
+                    sev_term = max(sev, 0.5) if sev > 0.0 else 1.0
+                    base_score = conf * (sev_term + (n_harmonics * 1.5))
 
-                    capped_sev = min(sev, 10.0) if sev > 0.0 else 1.0
-                    base_score = conf * (capped_sev + (n_harmonics * 1.5))
-
-                    if fault_code.upper() == "BSF" and sidebands_detected:
-                        final_score = round(base_score * 2.0, 3)
-                    elif sidebands_detected:
-                        final_score = round(base_score * 1.5, 3)
+                    if sidebands_detected:
+                        final_score = round(base_score * 1.35, 3)
                     else:
                         final_score = round(base_score, 3)
 
@@ -150,7 +147,7 @@ def pick_primary_fault(
                     "abbr": fault_key.upper(),
                     "confidence": conf,
                     "severity": sev,
-                    "score": round(conf * (min(sev, 10.0) if sev > 0.0 else 1.0), 3),
+                    "score": round(conf * (max(sev, 0.5) if sev > 0.0 else 1.0), 3),
                     "category": "reciprocating",
                     "sidebands_detected": False,
                     "n_harmonics_matched": 0,

@@ -304,6 +304,7 @@ def _check_sidebands(
     ftf: float | None = None,
     min_abs_tol_hz: float = 0.5,
     tolerance_ratio: float = 0.015,
+    matched_harmonics: list[dict] | None = None,
 ) -> dict[str, Any]:
     """
     Checks for modulation sidebands:
@@ -311,21 +312,25 @@ def _check_sidebands(
     - BSF: checks cage speed modulation (center +- FTF, center +- 2*FTF, and center +- fr)
     Returns sideband matching status, matched frequencies, and total sideband energy.
     """
+    matched_harmonics = matched_harmonics or []
+    matched_h_set = {h["harmonic"] for h in matched_harmonics}
     sideband_orders = [-2, -1, 1, 2]
     matched_sidebands = []
     total_sideband_energy = 0.0
 
-    # Determine modulation frequencies to test
     mod_configs: list[tuple[float, str]] = []
     if fault_name == "BSF":
         cage_mod = ftf if (ftf is not None and ftf > 0) else (fr * 0.4)
         mod_configs.append((cage_mod, "FTF"))
         mod_configs.append((fr, "1X"))
+        center_freqs = []
+        if 1 in matched_h_set:
+            center_freqs.append(center_freq)
+        if 2 in matched_h_set:
+            center_freqs.append(center_freq * 2.0)
     else:
         mod_configs.append((fr, "1X"))
-
-    # For BSF, check sidebands around both 2xBSF and 1xBSF
-    center_freqs = [center_freq, center_freq * 2.0] if fault_name == "BSF" else [center_freq]
+        center_freqs = [center_freq]
 
     for c_freq in center_freqs:
         for mod_spacing, mod_label in mod_configs:
@@ -349,7 +354,11 @@ def _check_sidebands(
                         })
                         total_sideband_energy += sb_amp
 
-    has_sidebands = len(matched_sidebands) >= 1
+    has_sidebands = len(matched_sidebands) >= 2 or (
+        len(matched_sidebands) >= 1 and any(
+            sb["order"].startswith("+1") or sb["order"].startswith("-1") for sb in matched_sidebands
+        )
+    )
     return {
         "sidebands_detected": has_sidebands,
         "n_sidebands_matched": len(matched_sidebands),
@@ -466,7 +475,7 @@ def match_peaks(freqs: np.ndarray, magnitude: np.ndarray, fault_freqs: dict,
                     })
                     total_energy += band_amp
 
-        # Check sidebands
+        # Check sidebands with matched harmonics constraint
         sideband_info = {"sidebands_detected": False, "n_sidebands_matched": 0, "matched_sidebands": []}
         if fault_name in ("BPFI", "BSF") and len(matched_harmonics) > 0:
             sideband_info = _check_sidebands(
@@ -479,18 +488,39 @@ def match_peaks(freqs: np.ndarray, magnitude: np.ndarray, fault_freqs: dict,
                 ftf=ftf_freq,
                 min_abs_tol_hz=min_abs_tol_hz,
                 tolerance_ratio=tolerance_ratio,
+                matched_harmonics=matched_harmonics,
             )
 
         severity = total_energy / local_baseline if local_baseline > 0 else 0.0
-        confidence = len(matched_harmonics) / n_harmonics
+        n_matched = len(matched_harmonics)
+
+        if n_matched == 0:
+            confidence = 0.0
+        else:
+            c_harm = n_matched / n_harmonics
+            has_h1 = any(h["harmonic"] == 1 for h in matched_harmonics)
+            if not has_h1:
+                c_harm *= 0.70
+            snr_factor = min(1.0, max(0.1, severity / 8.0)) if severity > 0 else 0.0
+            sideband_bonus = 0.15 if sideband_info.get("sidebands_detected") else 0.0
+            raw_conf = (c_harm * 0.60) + (snr_factor * 0.25) + sideband_bonus
+            confidence = min(1.0, max(0.0, raw_conf))
 
         results[fault_name] = {
             "severity": round(severity, 2),
             "matched_harmonics": matched_harmonics,
             "confidence": round(confidence, 2),
-            "n_harmonics_matched": len(matched_harmonics),
+            "n_harmonics_matched": n_matched,
             "sidebands": sideband_info,
         }
+
+    max_sev = max((v["severity"] for v in results.values()), default=0.0)
+    if max_sev > 0:
+        for fault_name, data in results.items():
+            if data["severity"] > 0:
+                sev_rel = data["severity"] / max_sev
+                if sev_rel < 0.25:
+                    data["confidence"] = round(data["confidence"] * max(0.40, sev_rel * 2.0), 2)
 
     return results
 

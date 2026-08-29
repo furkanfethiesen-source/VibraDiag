@@ -126,7 +126,6 @@ def _rectangularize_kurtogram(kurtogram: list[Any]) -> tuple[list[list[float]], 
     level_labels = [f"Level {i+1}" for i in range(len(valid_rows))]
     for row in valid_rows:
         row_arr = np.asarray(row, dtype=float)
-        # Replace non-finite with 0 for clean display
         row_arr = np.nan_to_num(row_arr, nan=0.0, neginf=0.0, posinf=0.0)
         n = len(row_arr)
         if n == max_cols:
@@ -363,7 +362,6 @@ def plot_diagnostics_node(state: dict) -> dict[str, Any]:
 
             f_rot = float(rpm) / 60.0 if rpm and rpm > 0 else 29.95
 
-            # Band-pass filter around 1X/2X shaft harmonics
             lowcut = max(2.0, f_rot * 0.4)
             highcut = min(fs * 0.45, max(lowcut + 10.0, f_rot * 3.5))
             sos = butter(4, [lowcut, highcut], btype="bandpass", fs=fs, output="sos")
@@ -503,7 +501,6 @@ def _sanitize_for_state(obj: Any) -> Any:
 def map_subgraph_to_parent(subgraph_output: dict) -> dict:
     """SignalProcessingInternalState -> VibraDiagMainState mapping."""
     raw_dict = dict(subgraph_output)
-    # Remove raw loaded_signal and raw kurtogram decomposition matrix to keep parent state lightweight
     raw_dict.pop("loaded_signal", None)
     raw_dict.pop("kurtogram", None)
     sanitized = _sanitize_for_state(raw_dict)
@@ -540,9 +537,21 @@ def signal_processing_subgraph_node(parent_state: VibraDiagMainState) -> dict:
         recip_res = reciprocating_expert_node(state)
         state.update(recip_res)
 
+    from deterministic_tools.fault_analyzer import pick_primary_fault
+    fault_summary = pick_primary_fault(
+        direct_spectrum_diagnosis=state.get("direct_spectrum_diagnosis"),
+        envelope_diagnosis=state.get("envelope_diagnosis"),
+        reciprocating_diagnosis=state.get("reciprocating_diagnosis"),
+    )
+    state["primary_fault_data"] = fault_summary
+    state["primary_fault"] = fault_summary.get("primary_fault_name")
+    state["primary_fault_abbr"] = fault_summary.get("fault_type_abbr")
+
     plots_res = plot_diagnostics_node(state)
 
     dsp_output = map_subgraph_to_parent(state)
+    dsp_output["primary_fault"] = fault_summary.get("primary_fault_name")
+    dsp_output["primary_fault_data"] = fault_summary
     dsp_output.update(plots_res)
     return dsp_output
 
