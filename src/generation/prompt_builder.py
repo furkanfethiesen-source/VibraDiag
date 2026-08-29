@@ -343,6 +343,9 @@ def build_messages_payload(
         for turn in chat_history:
             if isinstance(turn, dict) and "role" in turn and "content" in turn:
                 messages.append({"role": str(turn["role"]), "content": str(turn["content"])})
+            elif hasattr(turn, "type") and hasattr(turn, "content"):
+                role = "assistant" if turn.type == "ai" else "user"
+                messages.append({"role": role, "content": str(turn.content)})
     messages.append({"role": "user", "content": user_message})
     return messages
 

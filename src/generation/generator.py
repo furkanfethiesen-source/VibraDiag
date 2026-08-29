@@ -9,6 +9,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from langsmith import traceable
+
 from .client import GroqClient
 from .prompt_builder import (
     build_initial_signal_query,
@@ -20,6 +22,7 @@ from .prompt_builder import (
 logger = logging.getLogger(__name__)
 
 
+@traceable(name="generation_node")
 def generation_node(state: Any) -> dict[str, Any]:
     """
     LangGraph generation node.
@@ -76,8 +79,9 @@ def generation_node(state: Any) -> dict[str, Any]:
     if not merged_context:
         text_passages = state_dict.get("text_passages", [])
         if text_passages:
+            top_passages = text_passages[:3]
             merged_context = "\n\n".join(
-                [f"[Kaynak: {p.get('id', 'N/A')}]\n{p.get('text', '')}" for p in text_passages if p.get("text")]
+                [f"[Kaynak: {p.get('id', 'N/A')}]\n{p.get('text', '')}" for p in top_passages if p.get("text")]
             )
         else:
             retrieval_results = state_dict.get("retrieval_results", [])
@@ -89,12 +93,12 @@ def generation_node(state: Any) -> dict[str, Any]:
                     chunks = res.get("chunks", [])
                 else:
                     chunks = []
-                for ch in chunks:
+                for ch in chunks[:3]:
                     text = ch.text if hasattr(ch, "text") else ch.get("text", "")
                     if text:
                         chunks_text.append(text)
             if chunks_text:
-                merged_context = "\n\n".join(chunks_text)
+                merged_context = "\n\n".join(chunks_text[:3])
 
     sub_query_passages = state_dict.get("sub_query_passages")
     is_decomposed = bool(sub_query_passages)

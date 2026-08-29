@@ -19,22 +19,24 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from groq import Groq
+from langsmith import traceable
 from config_loader import load_appcfg
 
 logger = logging.getLogger(__name__)
 
 
 class GroqClient:
-    """Wrapper around Groq API client for generation tasks."""
+    """Wrapper around Groq API client for generation tasks with Gemini fallback."""
 
     def __init__(self, config: dict[str, Any] | None = None, api_key: str | None = None):
         app_cfg = load_appcfg()
         llm_cfg = app_cfg.llm if hasattr(app_cfg, "llm") else {}
 
         provided_cfg = config or llm_cfg
-        self.model = provided_cfg.get("model", "qwen/qwen3.6-27b")
-        self.temperature = provided_cfg.get("temperature", 0.3)
-        self.max_tokens = provided_cfg.get("max_tokens", 2048)
+        self.model = provided_cfg.get("model", "openai/gpt-oss-120b")
+        self.temperature = provided_cfg.get("temperature", 0.2)
+        self.max_tokens = provided_cfg.get("max_tokens", 4096)
+        self.reasoning_format = provided_cfg.get("reasoning_format", "parsed")
 
         self.api_key = api_key or os.getenv("GROQ_API_KEY")
         self._client = None
@@ -53,6 +55,76 @@ class GroqClient:
             self._client = Groq(api_key=key)
         return self._client
 
+    def _clean_reasoning_tags(self, content: str) -> str:
+        """Strip internal chain-of-thought <think> tags cleanly without prompt leakage."""
+        if not content:
+            return ""
+
+        if "<think>" in content:
+            if "</think>" in content:
+                parts = content.split("</think>", 1)
+                cleaned = parts[1].strip()
+            else:
+                before_think = content.split("<think>", 1)[0].strip()
+                if before_think:
+                    cleaned = before_think
+                else:
+                    cleaned = content.replace("<think>", "").strip()
+        else:
+            cleaned = content.strip()
+
+        return cleaned if cleaned else content.strip()
+
+    def _generate_with_gemini_fallback(
+        self,
+        messages: list[dict[str, str]],
+        temperature: float,
+        max_tokens: int,
+    ) -> str | None:
+        """Fallback to Google Gemini if Groq is unavailable or rate-limited."""
+        gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        if not gemini_key:
+            logger.warning("GEMINI_API_KEY or GOOGLE_API_KEY is not set. Gemini fallback is unavailable.")
+            return None
+
+        try:
+            from google import genai
+            from google.genai import types
+
+            client = genai.Client(api_key=gemini_key)
+
+            sys_instruction = ""
+            user_contents = []
+            for msg in messages:
+                role = msg.get("role")
+                text = msg.get("content", "")
+                if role == "system":
+                    sys_instruction = (sys_instruction + "\n" + text).strip()
+                elif role == "user":
+                    user_contents.append(f"Kullanıcı: {text}")
+                elif role == "assistant":
+                    user_contents.append(f"Asistan: {text}")
+
+            prompt_body = "\n\n".join(user_contents)
+            gemini_max = min(max_tokens, 65536)
+            config = types.GenerateContentConfig(
+                temperature=temperature,
+                max_output_tokens=gemini_max,
+                system_instruction=sys_instruction if sys_instruction else None,
+            )
+
+            logger.info("Calling Gemini Fallback model: gemini-2.5-flash")
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt_body,
+                config=config,
+            )
+            return (response.text or "").strip()
+        except Exception as e:
+            logger.warning(f"Gemini fallback generation failed: {e}")
+            return None
+
+    @traceable(name="groq_generate")
     def generate(
         self,
         messages: list[dict[str, str]] | None = None,
@@ -61,7 +133,7 @@ class GroqClient:
         temperature: float | None = None,
         max_tokens: int | None = None,
     ) -> str:
-        """Executes a chat completion call with Groq."""
+        """Executes a chat completion call with Groq and automatic Gemini fallback."""
 
         temp = self.temperature if temperature is None else temperature
         tokens = self.max_tokens if max_tokens is None else max_tokens
@@ -75,14 +147,16 @@ class GroqClient:
             ]
 
         logger.info(
-            "Calling Groq LLM model: %s (%d messages, temp=%.2f, max_tokens=%d)",
+            "Calling Groq LLM model: %s (%d messages, temp=%.2f, max_tokens=%d, reasoning_format=%s)",
             self.model,
             len(messages),
             temp,
             tokens,
+            self.reasoning_format,
         )
 
         max_retries = 3
+        last_error = None
         for attempt in range(max_retries):
             try:
                 resp = self.client.chat.completions.create(
@@ -90,34 +164,47 @@ class GroqClient:
                     messages=messages,
                     temperature=temp,
                     max_tokens=tokens,
+                    reasoning_format=self.reasoning_format,
                 )
-                content = resp.choices[0].message.content or ""
+                choice = resp.choices[0]
+                content = choice.message.content or ""
 
-                if "<think>" in content:
-                    if "</think>" in content:
-                        parts = content.split("</think>", 1)
-                        cleaned = parts[1].strip()
-                    else:
-                        before_think = content.split("<think>", 1)[0].strip()
-                        if before_think:
-                            cleaned = before_think
-                        else:
-                            quotes = re.findall(r'"([^"\n]{10,200})"', content)
-                            if quotes:
-                                cleaned = quotes[-1]
-                            else:
-                                lines = [ln.strip() for ln in content.replace("<think>", "").split("\n") if ln.strip() and not ln.strip().startswith(("*", "-", "#", "1.", "2.", "3.", "4.", "5."))]
-                                cleaned = lines[-1] if lines else ""
-                else:
-                    cleaned = content.strip()
+                # finish_reason kontrolü: kesilme tespiti
+                if choice.finish_reason == "length":
+                    logger.warning(
+                        "⚠️ LLM output truncated (finish_reason='length'). "
+                        "Output length: %d chars, max_tokens: %d. "
+                        "Consider increasing max_tokens in config.",
+                        len(content), tokens,
+                    )
 
-                return cleaned if cleaned else content.strip()
+                # reasoning_format="parsed" ise content zaten temiz,
+                # "raw" ise eski temizleme mantığı çalışır
+                if self.reasoning_format == "parsed":
+                    return content.strip()
+                return self._clean_reasoning_tags(content)
+
             except RateLimitError as rle:
-                logger.warning(f"Groq RateLimit (429) uyarısı (Deneme {attempt + 1}/{max_retries}): 10sn bekleniyor...")
-                if attempt == max_retries - 1:
-                    raise RuntimeError(f"LLM generation failed after {max_retries} retries: {rle}") from rle
-                time.sleep(10)
+                last_error = rle
+                sleep_time = 2.0 * (2 ** attempt)
+                logger.warning(
+                    f"Groq RateLimit (429) uyarısı (Deneme {attempt + 1}/{max_retries}): {sleep_time:.1f}sn bekleniyor..."
+                )
+                time.sleep(sleep_time)
+
             except Exception as err:
-                logger.error("Groq LLM generation error: %s", err, exc_info=True)
-                raise RuntimeError(f"LLM generation failed: {err}") from err
+                last_error = err
+                logger.warning(f"Groq LLM attempt {attempt + 1} failed: {err}")
+                if attempt < max_retries - 1:
+                    time.sleep(1.0)
+
+        # Groq exhausted, try Gemini fallback before failing
+        logger.warning("Groq retries exhausted, attempting Gemini fallback...")
+        fallback_resp = self._generate_with_gemini_fallback(messages, temp, tokens)
+        if fallback_resp:
+            logger.info("Gemini fallback succeeded (%d chars)", len(fallback_resp))
+            return fallback_resp
+
+        logger.error("Groq LLM generation error after all retries: %s", last_error, exc_info=True)
+        raise RuntimeError(f"LLM generation failed: {last_error}") from last_error
 
