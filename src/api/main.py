@@ -9,6 +9,9 @@ import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+from dotenv import load_dotenv
+load_dotenv()
+
 SRC_DIR = Path(__file__).resolve().parent.parent
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
@@ -41,10 +44,16 @@ async def lifespan(app: FastAPI):
     upload_dir = Path(api_cfg.get("upload_dir", "./data/uploads")).resolve()
     upload_dir.mkdir(parents=True, exist_ok=True)
 
+    import os
+    langsmith_tracing = os.getenv("LANGCHAIN_TRACING_V2") or os.getenv("LANGSMITH_TRACING")
+    langsmith_project = os.getenv("LANGCHAIN_PROJECT") or os.getenv("LANGSMITH_PROJECT", "VibraDiag")
+    has_langsmith_key = bool(os.getenv("LANGCHAIN_API_KEY") or os.getenv("LANGSMITH_API_KEY"))
+
     logger.info("=" * 60)
     logger.info(f"Starting {app.title} v{app.version}")
     logger.info(f"Upload directory: {upload_dir}")
     logger.info(f"Checkpointer: {api_cfg.get('checkpointer_type', 'sqlite')}")
+    logger.info(f"LangSmith Tracing: {langsmith_tracing == 'true' and has_langsmith_key} (Project: {langsmith_project})")
     logger.info("=" * 60)
 
     yield
