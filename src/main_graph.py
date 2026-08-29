@@ -7,7 +7,7 @@ Combines:
 2. Deterministic Signal Processing SubGraph (Kurtogram, Rotating/Reciprocating Expert, ISO 2372 / VDI 2056).
 3. Diagnostic Plot Generation (FFT Spectrum, Kurtogram Heatmap).
 4. Hybrid Vector & Decomposed RAG Retrieval (Dense + BM42 Sparse + Parent-Child DocStore + Reranker).
-5. Groq Qwen 3.6-27b Generation Engine (with ISO Zone D Emergency Directive & Signal Injection).
+5. Groq openai/gpt-oss-120b Generation Engine (with ISO Zone D Emergency Directive & Signal Injection).
 6. Multi-tiered Self-Corrector Verification Loop (DSP Fast-Fail, Gemini Faithfulness/Relevance, Dynamic Query Reformulation).
 7. LangGraph State Persistence (MemorySaver Checkpointer support).
 """
@@ -18,10 +18,14 @@ import json
 import logging
 from typing import Any, Literal
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
+from langsmith import traceable
 
 from deterministic_tools.reader import LoadedSignal, SignalReaderFactory
 from deterministic_tools.signal_processing_subgraph import (
@@ -231,6 +235,7 @@ def signal_loader_node(state: VibraDiagMainState) -> dict[str, Any]:
         }
 
 
+@traceable(name="signal_dsp_node")
 def signal_dsp_node(state: VibraDiagMainState) -> dict[str, Any]:
     """
     Executes the isolated SignalProcessingSubGraph with ephemeral signal loading,
@@ -289,6 +294,7 @@ def auto_query_node(state: VibraDiagMainState) -> dict[str, Any]:
     }
 
 
+@traceable(name="retrieval_node")
 def retrieval_node(
     state: VibraDiagMainState,
     retrieval_graph: RetrievalGraph | None = None,
@@ -323,7 +329,7 @@ def retrieval_node(
         ]
 
         merged_context = "\n\n".join(
-            [f"[Kaynak: {p.get('id', 'N/A')}]\n{p.get('text', '')}" for p in filtered_passages if p.get("text")]
+            [f"[Kaynak: {p.get('id', 'N/A')}]\n{p.get('text', '')}" for p in filtered_passages[:3] if p.get("text")]
         )
 
         return {
@@ -344,6 +350,7 @@ def retrieval_node(
         }
 
 
+@traceable(name="generation_node_wrapper")
 def generation_node_wrapper(state: VibraDiagMainState) -> dict[str, Any]:
     """
     Invokes generation_node, ensuring ISO Zone D emergency guidance is incorporated.
