@@ -28,8 +28,7 @@
 10. [Limitations](#10-limitations)
 11. [Future Improvements](#11-future-improvements)
 12. [Project Status](#12-project-status)
-13. [Repository Workflow](#13-repository-workflow)
-14. [Author](#14-author)
+13. [Author](#14-author)
 
 ---
 
@@ -95,7 +94,7 @@ flowchart TD
 1. **Digital Signal Processing (DSP):** Deterministic multi-channel vibration signal analysis computing FFT spectra, spectral kurtograms, Hilbert envelope demodulation, parabolic peak interpolation, kinematic defect frequency matching (BPFO, BPFI, BSF, FTF), and ISO 10816 / 2372 / VDI 2056 severity grading with zero hallucination risk.
 2. **Data / Document Ingestion:** Multimodal extraction of industrial vibration standards, manufacturer manuals, and vibration engineering textbooks via PyMuPDF text parsing, table geometry recognition, and Gemini 3.5 Flash visual figure extraction.
 3. **Preprocessing / Cleaning:** Section-aware hierarchy tagging, noise filtering, ghost-table removal, and bounding-box figure masking.
-4. **Chunking:** Two-tier Parent-Child chunking (~1200 token Parent contexts preserved in a relational document store; ~300 token focused Child chunks indexed for search).
+4. **Chunking:** Two-tier Parent-Child chunking (~1500 token Parent contexts preserved in a relational document store; ~200 token focused Child chunks indexed for search).
 5. **Embedding:** Dense semantic embeddings via `BAAI/bge-m3` combined with lexical sparse weights via `FastEmbed BM42` (capturing exact mechanical codes and formulas).
 6. **Vector Store:** High-performance Qdrant vector database (collections: `vibra_text_child` and `vibra_visual`) linked with a persistent SQLite Parent DocStore (`docstore.db`).
 7. **Query Classification & Decomposition:** Supervised Logistic Regression complexity gating and LLM sub-query decomposer that analyzes user inquiries, routing simple queries directly and decomposing complex multi-fault questions into parallel sub-query retrieval plans with overflow protection.
@@ -117,7 +116,7 @@ The system is orchestrated using a stateful LangGraph execution engine. When a s
 | **Orchestration Framework** | LangGraph & LangChain 0.3.x | Stateful graph workflows, MemorySaver checkpointing |
 | **Deterministic DSP** | SciPy 1.15+, NumPy 2.2+ | STFT, Hilbert transform, Fast Kurtogram, Parabolic peak refinement |
 | **Vector Database** | Qdrant 1.12+ | Dual-collection hybrid search (Dense + BM42 Sparse) |
-| **Parent Document Store** | SQLite (`docstore.db`) | Preserves full ~1200 token parent context for child matches |
+| **Parent Document Store** | SQLite (`docstore.db`) | Preserves full ~1500 token parent context for child matches |
 | **Dense Embeddings** | `BAAI/bge-m3` | Multilingual, 1024-dimensional dense vector embeddings |
 | **Sparse Embeddings** | `FastEmbed BM42` | Term-weighted sparse vectors for exact technical acronyms (BPFO, 1X, 2X) |
 | **Cross-Encoder Reranker** | `BAAI/bge-reranker-large` | High-precision re-ranking with dynamic thresholding and score floors |
