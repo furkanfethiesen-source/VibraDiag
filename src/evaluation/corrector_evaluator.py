@@ -464,6 +464,11 @@ def simulate_multi_cycle_session(
         for cycle in range(1, global_max_cycles + 2):
             output = self_corrector_node(
                 state=state,
+                thresholds_override={
+                    "global_max_cycles": global_max_cycles,
+                    "max_retrieval_attempts": global_max_cycles,
+                    "max_generation_attempts": global_max_cycles,
+                },
                 judge_client=judge_client,
                 groq_client=groq_client,
             )

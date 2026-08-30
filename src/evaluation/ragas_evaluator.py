@@ -109,7 +109,7 @@ def get_eval_paths() -> dict[str, str]:
             paths_cfg.get("gold_dataset_path")
             or ("./data/evaluation/retrieval_benchmark_dev8.json" if Path("./data/evaluation/retrieval_benchmark_dev8.json").exists() else "./retrieval_benchmark_dev8.json")
         )
-        output_dir = paths_cfg.get("eval_output_dir") or "./data/eval_reports"
+        output_dir = paths_cfg.get("eval_tuning_output_dir") or paths_cfg.get("eval_output_dir") or "./data/eval_reports/tuning_results"
         return {
             "qdrant_persist_path": qdrant_path,
             "docstore_path": docstore_path,
@@ -121,7 +121,7 @@ def get_eval_paths() -> dict[str, str]:
             "qdrant_persist_path": "./qdrant_data",
             "docstore_path": "./docstore.db",
             "gold_dataset_path": "./data/evaluation/retrieval_benchmark_dev8.json" if Path("./data/evaluation/retrieval_benchmark_dev8.json").exists() else "./retrieval_benchmark_dev8.json",
-            "eval_output_dir": "./data/eval_reports",
+            "eval_output_dir": "./data/eval_reports/tuning_results",
         }
 
 
@@ -295,6 +295,7 @@ async def _run_single(
     visual_top_k: int,
     threshold: float | None,
     deduplicate_parents: bool = False,
+    enable_corrector: bool = False,
 ) -> dict[str, Any]:
     question = item["question"]
     q_id = item.get("_id", "unknown")
@@ -332,9 +333,32 @@ async def _run_single(
         logger.warning(f"[{q_id}] Boş context döndü: '{question}'")
 
     generated_answer = ""
+    corrector_decision = "n/a"
     if generation_client is not None and contexts:
         try:
             generated_answer = await asyncio.to_thread(_generate_answer, generation_client, question, contexts)
+            if enable_corrector and generated_answer:
+                try:
+                    from self_corrector.corrector_node import self_corrector_node
+                    corrector_state = {
+                        "user_query": question,
+                        "llm_response": generated_answer,
+                        "text_passages": contexts,
+                        "visual_evidence": visual_evidence,
+                        "correction_attempts": {"retrieval": 1, "generation": 1},
+                        "global_cycles": 0,
+                    }
+                    corrector_out = await asyncio.to_thread(
+                        self_corrector_node,
+                        state=corrector_state,
+                        groq_client=generation_client,
+                    )
+                    corrector_decision = corrector_out.get("route_decision", "approved")
+                    if corrector_out.get("llm_response"):
+                        generated_answer = corrector_out["llm_response"]
+                except Exception as corr_err:
+                    logger.warning(f"[{q_id}] Corrector validation error: {corr_err}")
+                    corrector_decision = f"error: {corr_err}"
         except Exception as err:
             logger.error(f"[{q_id}] Generation hatası: {err}")
             generated_answer = f"[GENERATION HATASI: {err}]"
@@ -381,6 +405,7 @@ async def _run_single(
             "generated_answer": generated_answer,
             "generation_failed": generation_failed,
             "retrieval_error": retrieval_error,
+            "corrector_decision": corrector_decision,
             "expected_chunk_ids": item.get("expected_chunk_ids", []),
             "expected_child_chunk_ids": expected_child_ids,
             "expected_parent_chunk_ids": expected_parent_ids,
@@ -413,13 +438,15 @@ async def build_ragas_dataset(
     visual_top_k: int,
     threshold: float | None,
     deduplicate_parents: bool = False,
+    enable_corrector: bool = False,
     concurrency: int = 4,
 ) -> tuple[Dataset, list[dict[str, Any]]]:
-    sem = asyncio.Semaphore(concurrency)
+    effective_concurrency = 1 if generation_client is not None else concurrency
+    sem = asyncio.Semaphore(effective_concurrency)
 
     async def _bounded(item: dict[str, Any]) -> dict[str, Any]:
         async with sem:
-            return await _run_single(
+            res = await _run_single(
                 graph,
                 generation_client,
                 item,
@@ -427,7 +454,11 @@ async def build_ragas_dataset(
                 visual_top_k,
                 threshold,
                 deduplicate_parents=deduplicate_parents,
+                enable_corrector=enable_corrector,
             )
+            if generation_client is not None:
+                await asyncio.sleep(8.0)
+            return res
 
     results = await asyncio.gather(*(_bounded(item) for item in gold_items))
     rows = [r["row"] for r in results]
@@ -801,7 +832,7 @@ def main() -> None:
     parser.add_argument("--enable-corrector", action="store_true", default=False, help="Self-Corrector doğrulama döngüsünü aktif et (Varsayılan: False)")
     parser.add_argument("--with-entity-recall", action="store_true", help="ContextEntityRecall metriğini ekle")
     parser.add_argument("--judge-model", default="gemini-3.1-flash-lite", help="RAGAS LLM judge modeli")
-    parser.add_argument("--generator-model", default="qwen/qwen3.6-27b", help="Üretim (generation) LLM modeli")
+    parser.add_argument("--generator-model", default="openai/gpt-oss-120b", help="Üretim (generation) LLM modeli")
     parser.add_argument("--skip-ragas", action="store_true", help="RAGAS LLM judge adımını atla (sadece deterministik ID metriklerini hesapla)")
     parser.add_argument("--skip-generation", action="store_true", help="generation adımını atla")
     parser.add_argument("--retrieval-concurrency", type=int, default=4, help="Yerel retrieval eşzamanlılık")
@@ -836,6 +867,7 @@ def main() -> None:
             visual_top_k=args.visual_top_k,
             threshold=args.threshold,
             deduplicate_parents=args.deduplicate_parents,
+            enable_corrector=args.enable_corrector,
             concurrency=retrieval_concurrency,
         )
     )
@@ -890,6 +922,7 @@ def main() -> None:
         "text_top_k (final, reranker sonrası)": args.text_top_k,
         "visual_top_k": args.visual_top_k,
         "deduplicate_parents (eval)": args.deduplicate_parents,
+        "enable_corrector (eval)": args.enable_corrector,
         "visual_fallback_threshold (kullanılan)": f"{resolved_threshold} [{threshold_source}]",
         **retrieval_params,
         "ragas_judge_model": args.judge_model if not args.skip_ragas else "n/a (--skip-ragas)",
