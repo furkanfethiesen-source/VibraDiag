@@ -113,9 +113,9 @@ class GroqClient:
                 system_instruction=sys_instruction if sys_instruction else None,
             )
 
-            logger.info("Calling Gemini Fallback model: gemini-2.5-flash")
+            logger.info("Calling Gemini Fallback model: gemini-3.1-flash-lite")
             response = client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-3.1-flash-lite",
                 contents=prompt_body,
                 config=config,
             )
