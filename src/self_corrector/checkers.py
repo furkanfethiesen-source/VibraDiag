@@ -135,6 +135,74 @@ def _is_term_negated_in_text(text: str, terms: list[str]) -> bool:
     return False
 
 
+def _check_iso_zone_consistency(generated_text: str, iso_zone_gt: str) -> str | None:
+    """
+    Validates that generated text does not falsely assert an incorrect ISO severity zone
+    as the current measured state, while allowing educational definitions, tables, or
+    conditional/future risk warnings (e.g. 'Zone C seviyesindedir, önlem alınmazsa Zone D'ye geçebilir').
+    """
+    if not generated_text or not iso_zone_gt:
+        return None
+
+    gt_letter = iso_zone_gt.strip().upper()[-1]
+    if gt_letter not in ("A", "B", "C", "D"):
+        return None
+
+    norm_text = normalize_text_tr(generated_text)
+    gt_terms = [f"zone {gt_letter.lower()}", f"bolge {gt_letter.lower()}", f"zon {gt_letter.lower()}"]
+    gt_affirmed = _contains_affirmative(generated_text, gt_terms)
+
+    sentences = [s.strip() for s in re.split(r"[.!?;\n]+", norm_text) if s.strip()]
+
+    transitional_warning_cues = (
+        "gecebilir", "ilerleyebilir", "ulasabilir", "yukselebilir", "cikabilir", "dusebilir",
+        "durumunda", "ihtimali", "riski", "tehlikesi", "ilerlerse", "alinmazsa", "yapilmazsa",
+        "seviyesine", "bolgesine", "ulasmasi", "gecmesi", "sonucu"
+    )
+
+    for sent in sentences:
+        matches = list(re.finditer(r"\b(?:zone|bolge|zon)\s*([a-d])\b", sent))
+        if not matches:
+            continue
+
+        distinct_zones_in_sent = {m.group(1).upper() for m in matches}
+        # Multi-zone definition sentences (e.g. Zone A (yeni), Zone B (kabul), Zone C (uyarı), Zone D (hasar))
+        if len(distinct_zones_in_sent) >= 3 or (
+            len(distinct_zones_in_sent) >= 2
+            and any(k in sent for k in ("siniflandir", "ayrilir", "tanimlan", "tablosu", "kategoriler"))
+        ):
+            continue
+
+        for m in matches:
+            claimed_letter = m.group(1).upper()
+            if claimed_letter == gt_letter:
+                continue
+
+            match_str = m.group(0)
+            if _is_negated(sent, match_str):
+                continue
+
+            is_transitional = any(cue in sent for cue in transitional_warning_cues)
+            if is_transitional:
+                continue
+
+            if gt_affirmed:
+                is_direct_claim = any(
+                    c in sent
+                    for c in (
+                        "mevcut", "olculen", "tespit edilen", "degerlendirilen", "su an",
+                        "durumu", "icerisindedir", "icindedir", "araligindadir", "bolgesindedir",
+                        "zonundadir", "seviyesindedir", "sinirindadir"
+                    )
+                )
+                if not is_direct_claim:
+                    continue
+
+            return f"DSP ISO şiddet zonu '{iso_zone_gt}' iken üretilen metinde 'Zone {claimed_letter}' mevcut durum olarak iddia edilmiştir."
+
+    return None
+
+
 class DSPConsistencyChecker:
     """
     Validates generated text against signal processing (DSP) state and ground truth.
@@ -231,18 +299,9 @@ class DSPConsistencyChecker:
 
         iso_zone = signal_data.get("iso_severity_zone")
         if iso_zone:
-            zone_letter = iso_zone.strip().upper()[-1]
-
-            zone_matches = list(re.finditer(r"\bzone\s*([a-d])\b", text_lower))
-            for zm in zone_matches:
-                claimed_letter = zm.group(1).upper()
-                match_str = zm.group(0)
-                if claimed_letter != zone_letter:
-                    if not _is_negated(generated_text, match_str):
-                        detected_mismatches.append(
-                            f"DSP ISO şiddet zonu '{iso_zone}' iken üretilen metinde 'Zone {claimed_letter}' iddia edilmiştir."
-                        )
-                        break
+            zone_mismatch = _check_iso_zone_consistency(generated_text, str(iso_zone))
+            if zone_mismatch:
+                detected_mismatches.append(zone_mismatch)
 
         latency_ms = (time.time() - start_time) * 1000
 

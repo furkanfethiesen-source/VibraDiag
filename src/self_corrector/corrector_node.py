@@ -84,6 +84,32 @@ def load_thresholds() -> dict[str, Any]:
     return default_config
 
 
+def _dispatch_corrector_telemetry(
+    session_id: str | None,
+    query: str,
+    decision: CorrectionDecision,
+    attempt_number: int = 1,
+) -> None:
+    """Dispatches decision telemetry to both local JSONL log and LangSmith observer."""
+    LocalCorrectorEventLogger.log_event(
+        session_id=session_id,
+        query=query,
+        decision=decision,
+        attempt_number=attempt_number,
+    )
+    try:
+        from langsmith.run_helpers import get_current_run_tree
+        run_tree = get_current_run_tree()
+        run_id = str(run_tree.id) if run_tree else None
+        if run_id:
+            LangSmithCorrectorObserver.record_decision_feedback(
+                run_id=run_id,
+                decision=decision,
+            )
+    except Exception as obs_err:
+        logger.debug("LangSmith feedback dispatch skipped: %s", obs_err)
+
+
 @traceable(name="self_corrector_node")
 def self_corrector_node(
     state: Any,
@@ -179,7 +205,7 @@ def self_corrector_node(
             total_latency_ms=(time.time() - start_total_time) * 1000,
         )
 
-        LocalCorrectorEventLogger.log_event(
+        _dispatch_corrector_telemetry(
             session_id=session_id,
             query=user_query,
             decision=decision,
@@ -225,7 +251,7 @@ def self_corrector_node(
             needs_review=False,
         )
 
-        LocalCorrectorEventLogger.log_event(
+        _dispatch_corrector_telemetry(
             session_id=session_id,
             query=user_query,
             decision=decision,
@@ -245,6 +271,16 @@ def self_corrector_node(
                 "reason": fail_reason,
             }],
         }
+
+    # Kesilmiş yanıt tespiti: cümle ortasında biten yanıtlar
+    if llm_response and not generation_failed:
+        stripped = llm_response.rstrip()
+        if stripped and stripped[-1] not in ".!?:;)]\"\n—" and len(stripped) > 200:
+            logger.warning(
+                "⚠️ LLM response appears truncated (ends with: '...%s'). "
+                "Likely hit max_tokens limit.",
+                stripped[-30:],
+            )
 
     dsp_result: CheckerResult = DSPConsistencyChecker.check(
         generated_text=llm_response,
@@ -275,7 +311,7 @@ def self_corrector_node(
             needs_review=False,
         )
 
-        LocalCorrectorEventLogger.log_event(
+        _dispatch_corrector_telemetry(
             session_id=session_id,
             query=user_query,
             decision=decision,
@@ -343,7 +379,7 @@ def self_corrector_node(
             needs_review=has_execution_error,
         )
 
-        LocalCorrectorEventLogger.log_event(
+        _dispatch_corrector_telemetry(
             session_id=session_id,
             query=user_query,
             decision=decision,
@@ -425,7 +461,7 @@ def self_corrector_node(
             needs_review=has_execution_error,
         )
 
-        LocalCorrectorEventLogger.log_event(
+        _dispatch_corrector_telemetry(
             session_id=session_id,
             query=user_query,
             decision=decision,

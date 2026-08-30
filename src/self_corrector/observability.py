@@ -14,6 +14,7 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+import uuid
 
 from schemas.schemas import CorrectionDecision, TokenUsageInfo
 
@@ -121,6 +122,13 @@ class LangSmithCorrectorObserver:
     ) -> None:
         client = cls.get_client()
         if not client or not run_id:
+            return
+
+
+        try:
+            uuid.UUID(str(run_id))
+        except (ValueError, TypeError):
+            logger.debug("LangSmith feedback skipped: run_id '%s' is not a valid UUID", run_id)
             return
 
         try:
