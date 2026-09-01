@@ -120,3 +120,18 @@ This file is used to record significant changes throughout the project on a date
 - Minor inconsistencies fixed in the README.md .
 ### Notes
 - Project is in active development; the agentic RAG + DSP-based bearing fault diagnosis system continues to mature.
+
+---
+
+## [2026-09-01] — Prompt reconstruction and DSP optimization
+### Added
+- Written a benchmark script that evaluates and records 20 labeled signal test results (See [DECISIONS.md: Fault Consolidation via pick_primary_fault](DECISIONS.md#28-dsp-fault-consolidation-via-pick_primary_fault-and-weak-candidate-notification)).
+- Because of dominance of modulated sidebands in more severe damaged situations, dynamic SFER and compound fault arbitration were added to resolve secondary/co-occurring bearing defects when needed (See [DECISIONS.md: Dynamic SFER for Advanced Flaw Degradation](DECISIONS.md#29-dsp-dynamic-sideband-family-energy-ratio-sfer-for-advanced-flaw-degradation), [DECISIONS.md: Compound Defect Resolution & Multi-Fault Hierarchy](DECISIONS.md#211-dsp--architecture-compound-defect-resolution--multi-fault-hierarchy)).
+- Core prompt reconstructed into "Anchor & Action" dual-tier architecture to strictly ground theoretical fault signatures while allowing disciplined maintenance action guidance (See [DECISIONS.md: "Anchor & Action" Prompt Architecture & Qualitative Grounding](DECISIONS.md#45-generation-anchor--action-prompt-architecture--qualitative-grounding)).
+- Formal "Controlled Parametric Extrapolation" methodology note attached to evaluation deliverables (See [DECISIONS.md: Controlled Parametric Extrapolation & MVP Methodology Disclosure](DECISIONS.md#72-evaluation-controlled-parametric-extrapolation--mvp-methodology-disclosure)).
+
+### Changed
+- Generator output token budget optimized from 4096 to 1500 max tokens to eliminate Groq 8000 TPM HTTP 413 rate limit ceiling issues (See [DECISIONS.md: Output Token Budget Optimization](DECISIONS.md#46-generation-output-token-budget-optimization-1500-max-tokens--tpm-ceiling-protection)).
+
+### Fixed
+- Key optimizations implemented in DSP pipeline including physical channel energy weighting and power cepstrum quefrency spacing analysis (See [DECISIONS.md: Physical Channel Energy Weighting](DECISIONS.md#210-dsp-physical-channel-energy-weighting-in-multi-channel-fault-arbitration), [DECISIONS.md: Power Cepstrum Quefrency Analysis](DECISIONS.md#212-dsp-power-cepstrum-quefrency-analysis-for-sideband-harmonic-spacing)).

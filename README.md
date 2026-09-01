@@ -327,6 +327,8 @@ Zone C indicates that while the machine does not require an instantaneous emerge
 ## 12. Project Status
 **Status:** `In progress`
 
+See [CHANGELOG.md](CHANGELOG.md) for the full development history and [DECISIONS.md](DECISIONS.md) for architectural rationale.
+
 ---
 
 ## 13. Author

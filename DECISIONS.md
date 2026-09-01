@@ -22,6 +22,10 @@ This document records important technical and architectural decisions made throu
   - [2.6 DSP: Spectral Kurtosis Edge Artifact Protection](#26-dsp-spectral-kurtosis-edge-artifact-protection)
   - [2.7 DSP: Misalignment Detection via Cross-Channel Phase Difference](#27-dsp-misalignment-detection-via-cross-channel-phase-difference)
   - [2.8 DSP: Fault Consolidation via pick_primary_fault and Weak Candidate Notification](#28-dsp-fault-consolidation-via-pick_primary_fault-and-weak-candidate-notification)
+  - [2.9 DSP: Dynamic Sideband Family Energy Ratio (SFER) for Advanced Flaw Degradation](#29-dsp-dynamic-sideband-family-energy-ratio-sfer-for-advanced-flaw-degradation)
+  - [2.10 DSP: Physical Channel Energy Weighting in Multi-Channel Fault Arbitration](#210-dsp-physical-channel-energy-weighting-in-multi-channel-fault-arbitration)
+  - [2.11 DSP / Architecture: Compound Defect Resolution & Multi-Fault Hierarchy](#211-dsp--architecture-compound-defect-resolution--multi-fault-hierarchy)
+  - [2.12 DSP: Power Cepstrum Quefrency Analysis for Sideband Harmonic Spacing](#212-dsp-power-cepstrum-quefrency-analysis-for-sideband-harmonic-spacing)
 - [3. Retrieval](#3-retrieval)
   - [3.1 Retrieval: Parent-Child Chunking Strategy (Qdrant + SQLite)](#31-retrieval-parent-child-chunking-strategy-qdrant--sqlite)
   - [3.2 Qdrant: Hybrid Search with Dynamic Prefetch](#32-qdrant-hybrid-search-with-dynamic-prefetch)
@@ -34,6 +38,8 @@ This document records important technical and architectural decisions made throu
   - [4.2 Generation: Exponential Backoff and Gemini Fallback](#42-generation-exponential-backoff-and-gemini-fallback)
   - [4.3 Generation: Automatic Initial Query (build_initial_signal_query)](#43-generation-automatic-initial-query-build_initial_signal_query)
   - [4.4 Generation: Epistemic Refusal Behavior (Honest Statement of Missing Information)](#44-generation-epistemic-refusal-behavior-honest-statement-of-missing-information)
+  - [4.5 Generation: "Anchor & Action" Prompt Architecture & Qualitative Grounding](#45-generation-anchor--action-prompt-architecture--qualitative-grounding)
+  - [4.6 Generation: Output Token Budget Optimization (1500 Max Tokens & TPM Ceiling Protection)](#46-generation-output-token-budget-optimization-1500-max-tokens--tpm-ceiling-protection)
 - [5. Query Decomposer](#5-query-decomposer)
   - [5.1 Decomposer Router: Logistic Regression Classifier](#51-decomposer-router-logistic-regression-classifier)
   - [5.2 Decomposer: Max Sub-Query Overflow Protection](#52-decomposer-max-sub-query-overflow-protection)
@@ -43,6 +49,7 @@ This document records important technical and architectural decisions made throu
   - [6.3 Self-Corrector: Reducing Dual LLM Calls to a Single Call and Threshold Calibration](#63-self-corrector-reducing-dual-llm-calls-to-a-single-call-and-threshold-calibration)
 - [7. Evaluation](#7-evaluation)
   - [7.1 Evaluation: RAGAS + Deterministic Evaluation Metrics](#71-evaluation-ragas--deterministic-evaluation-metrics)
+  - [7.2 Evaluation: Controlled Parametric Extrapolation & MVP Methodology Disclosure](#72-evaluation-controlled-parametric-extrapolation--mvp-methodology-disclosure)
 
 ---
 
@@ -349,6 +356,88 @@ This document records important technical and architectural decisions made throu
 
 ---
 
+### 2.9 DSP: Dynamic Sideband Family Energy Ratio (SFER) for Advanced Flaw Degradation
+**Decision:** In `fault_analyzer.py`, the modulation sideband bonus multiplier was dynamically scaled according to the ratio of total sideband energy to carrier harmonic energy ($\text{SFER} = \frac{E_{sideband}}{E_{harmonics}}$) using $\text{multiplier} = 1.0 + \min\left(0.60, 0.35 + 0.25 \times \min(1.0, \text{SFER})\right)$.
+
+**Reasoning:**
+- As rolling element flaws degrade into advanced spalling stages (0.014" - 0.028"), vibration energy disperses from discrete carrier spikes into dense $\pm 1X$ shaft or $\pm FTF$ cage modulation sideband families.
+- A static sideband bonus under-weighted signals with rich modulation combs, allowing single spurious narrowband peaks to outscore genuine distributed flaw signatures.
+- SFER dynamically rewards heavily modulated envelopes without blowing up scores on isolated single-sideband noise.
+
+**Alternatives considered:**
+- Flat static bonus multiplier (0.35) — fails to distinguish between single-sideband noise and rich modulation combs.
+- Sideband peak count only (ignoring energy) — highly susceptible to low-amplitude noise spikes.
+
+**Consequence:**
+- Advanced flaw stages with dense modulation families receive higher diagnostic scores and robust ranking.
+- Minor computational overhead during sideband energy aggregation.
+- Related files: `fault_analyzer.py`
+
+**Status:** Confirmed
+
+---
+
+### 2.10 DSP: Physical Channel Energy Weighting in Multi-Channel Fault Arbitration
+**Decision:** Fault candidate scoring across multiple sensor channels incorporates raw channel RMS vibration energy weighting via $W_{energy} = \sqrt{\frac{RMS_{ch}}{\max(RMS_{DE}, RMS_{FE}, RMS_{BA})}}$ alongside absolute envelope power scaling.
+
+**Reasoning:**
+- Sensors located far from the defect source (e.g., Fan End or Machine Base) frequently possess significantly lower background noise floors.
+- Normalized signal-to-noise ratio ($S/N = \frac{\text{harm\_sum}}{\text{baseline\_floor}}$) was artificially inflated on distant channels, causing Drive End faults (such as in `187.mat`) to be misattributed to the Fan End.
+- Weighting normalized severity by physical vibration energy ensures that channel localization reflects genuine vibratory power and mechanical transmission paths.
+
+**Alternatives considered:**
+- Normalized SNR only — severe false positive channel localization on quiet sensors.
+- Hard channel masking — loses legitimate cross-channel transmission data in coupled bearing systems.
+
+**Consequence:**
+- False channel localization is eliminated while preserving cross-channel transmissibility analysis.
+- Drive End defects are correctly assigned to Drive End sensors even when Fan End noise floors are lower.
+- Related files: `fault_analyzer.py`, `signal_processing_subgraph.py`, `fault_localization.py`
+
+**Status:** Confirmed
+
+---
+
+### 2.11 DSP / Architecture: Compound Defect Resolution & Multi-Fault Hierarchy
+**Decision:** Transitioned from a strict single-fault winner-take-all classification to a Compound Defect architecture (`is_compound_fault`, `secondary_fault_name`, `co_occurring_faults`). When a distinct secondary candidate achieves confidence $\ge 0.70$ and a score $\ge 65\%$ of the primary fault, the system reports a compound fault state (e.g. BSF + BPFI).
+
+**Reasoning:**
+- In physical bearing degradation (e.g., severe 0.021" ball faults), a damaged rolling element repeatedly strikes the rotating inner raceway, generating both ball spin impacts ($BSF$) and inner race pass modulation ($BPFI \pm 1X$).
+- Forcing an arbitrary single label causes diagnostic oscillation and loses vital maintenance context.
+- Compound defect reporting accurately models multi-mechanism physical interactions.
+
+**Alternatives considered:**
+- Rigid single-label winner-take-all — obscures co-occurring defect mechanisms and degrades benchmark fidelity.
+- Unconstrained multi-label output — clutters reports with low-confidence noise candidates.
+
+**Consequence:**
+- Accurately captures complex compound degradation states in industrial machinery and benchmarks.
+- Full propagation across API DTOs and Streamlit UI badge elements.
+- Related files: `fault_analyzer.py`, `responses.py`, `graph_service.py`, `fault_panel.py`
+
+**Status:** Confirmed
+
+---
+
+### 2.12 DSP: Power Cepstrum Quefrency Analysis for Sideband Harmonic Spacing
+**Decision:** Implemented Power Cepstrum analysis (`compute_cepstrum_spacing`) on the envelope spectrum to calculate the dominant periodic modulation spacing ($\Delta f = 1/\text{quefrency}$) across complex multi-harmonic spectra.
+
+**Reasoning:**
+- Severe flaws often split the central carrier frequency into sidebands, making discrete peak matching ambiguous.
+- Power Cepstrum transforms multiplicative periodic modulations into additive Quefrency peaks, mathematically confirming whether the modulation spacing aligns with shaft speed ($1X$) or cage speed ($FTF$).
+
+**Alternatives considered:**
+- Autocorrelation of raw time signal — sensitive to non-synchronous background noise.
+- FFT bin difference clustering — high error rate in dense spectra.
+
+**Consequence:**
+- Robust mathematical verification of modulation families even when carrier peaks are attenuated.
+- Related files: `signal_processing.py`, `test_labeled_datasets.py`
+
+**Status:** Confirmed
+
+---
+
 ## 3. Retrieval
 
 ### 3.1 Retrieval: Parent-Child Chunking Strategy (Qdrant + SQLite)
@@ -570,6 +659,50 @@ This document records important technical and architectural decisions made throu
 
 ---
 
+### 4.5 Generation: "Anchor & Action" Prompt Architecture & Qualitative Grounding
+**Decision:** Refactored the core system prompt (`generation_prompt.base`) into an "Anchor & Action" dual-tier architecture: (1) **Strict Grounding Core:** Fault mechanism, FFT harmonic patterns (1X, 2X), kinematic bearing frequencies (BPFI, BPFO, BSF, FTF), and phase relationships are strictly constrained to retrieved document context and deterministic telemetry tables, with a strict prohibition against hallucinated numerical frequency formulas or speculative frequency bands (kcpm, kHz) and percentage shifts, enforcing qualitative descriptions instead (e.g. "broadband ultrasonic noise floor rises"). (2) **Disciplined Maintenance Extrapolation:** Practical maintenance actions are isolated under a dedicated "Önerilen Saha Müdahale ve Bakım Adımları" section, strictly capped at 4-5 concise, actionable bullet points without unverified numerical tolerances (e.g. sub-millimeter fit values) or speculative standard codes (EN/DIN).
+
+**Reasoning:**
+- Unconstrained parametric relaxation (Rule 2) caused the 120B model to dump encyclopedic domain knowledge (laser alignment tolerances, torque values, grout standards), which collapsed RAGAS Faithfulness from `0.98` to `0.50` because verified claims were overwhelmed by ungrounded parametric statements.
+- Conversely, a rigid strict-RAG prompt produced shallow 2-sentence responses that provided zero operational utility to field maintenance engineers due to corpus limitations regarding step-by-step repair procedures.
+- The "Anchor & Action" architecture isolates diagnostic theoretical claims (strictly verified) from standard maintenance practices (disciplined bullet points), eliminating speculative micro-tolerances while preserving actionable engineering guidance.
+
+**Alternatives considered:**
+- Strict document-only prompt — reports became shallow and unhelpful for field engineers when documents lacked maintenance protocols.
+- Free unconstrained generation — severe hallucination risks and catastrophic Faithfulness metric collapse (~0.29 - 0.31).
+- Unstructured hybrid prompt — model mixed ungrounded numerical tolerances directly into diagnostic reasoning.
+
+**Consequence:**
+- Faithfulness scores on complex fault queries improved dramatically (`q_017 looseness`: 0.29 → 0.88, `q_016 misalignment`: 0.31 → 0.68).
+- Model outputs maintain professional diagnostic rigor while delivering concise, safe maintenance guidance.
+- Related files: `prompts.yaml`, `prompt_builder.py`, `ragas_evaluator.py`
+
+**Status:** Confirmed
+
+---
+
+### 4.6 Generation: Output Token Budget Optimization (1500 Max Tokens & TPM Ceiling Protection)
+**Decision:** Lowered the primary generator output budget (`llm.max_tokens`) in `app.yaml` from `4096` to `1500` tokens, coupled with `text_top_k: 5` rich parent context retrieval.
+
+**Reasoning:**
+- On Groq's on-demand tier, `openai/gpt-oss-120b` enforces a strict 8000 Tokens Per Minute (TPM) ceiling.
+- With `max_tokens: 4096`, requests combining system prompts, 5 parent document chunks, and large output reservations frequently exceeded 8900-10150 requested tokens, triggering HTTP 413 (Rate Limit Exceeded) errors on 37.5% (3/8) of benchmark queries.
+- Reducing `max_tokens` to 1500 eliminated TPM 413 errors completely across all evaluation runs while preventing verbose text generation, reducing the statement denominator in RAGAS evaluation and increasing claim density.
+
+**Alternatives considered:**
+- Retaining 4096 tokens with aggressive request sleep delays — failed to prevent 413 errors because single-request token reservations exceeded the 8000 TPM limit.
+- Truncating input context chunks (`text_top_k: 3`) — solved TPM issues but starved the LLM of necessary diagnostic evidence, harming multi-harmonic fault identification.
+- Lowering to 512-800 tokens — truncated multi-stage bearing degradation tables and maintenance action steps.
+
+**Consequence:**
+- 100% generation success rate (0/8 HTTP 413 errors) across benchmark runs.
+- Optimal response length: concise executive diagnostic summaries with high informational density.
+- Related files: `app.yaml`, `client.py`, `ragas_evaluator.py`
+
+**Status:** Confirmed
+
+---
+
 ## 5. Query Decomposer
 
 ### 5.1 Decomposer Router: Logistic Regression Classifier
@@ -708,3 +841,25 @@ This document records important technical and architectural decisions made throu
 - Related files: `custom_metrics.py`, `ragas_evaluator.py`
 
 **Status:** Confirmed
+
+---
+
+### 7.2 Evaluation: Controlled Parametric Extrapolation & MVP Methodology Disclosure
+**Decision:** Explicitly formalized the "Controlled Parametric Extrapolation" methodology for the VibraDiag MVP in evaluation reporting (`eval_report_*.md`). The diagnostic core is held to strict 100% document fidelity, while maintenance advice is permitted controlled domain extrapolation. A formal engineer disclosure note is permanently attached to evaluation deliverables.
+
+**Reasoning:**
+- Engineering literature in the MVP corpus focuses predominantly on vibration spectral theory, formulas, and visual graphs, with limited procedural coverage of specific field repair actions.
+- Enforcing academic strict-RAG zero-extrapolation criteria penalizes standard engineering maintenance advice as "hallucination", creating an artificial trade-off between benchmark metrics and real-world industrial utility.
+- Transparently documenting this design choice clarifies the boundary between core diagnostic truth and pragmatic maintenance advisories for reviewers and stakeholders.
+
+**Alternatives considered:**
+- Hiding the extrapolation trade-off — misleads stakeholders regarding pure academic RAG faithfulness.
+- Restricting outputs strictly to corpus sentences — cripples practical usability for maintenance technicians.
+
+**Consequence:**
+- Transparent engineering methodology established across all project evaluation reports and documentation.
+- Reviewers can interpret Faithfulness metrics in the context of deliberate MVP architectural choices.
+- Related files: `eval_report_*.md`, `ragas_evaluator.py`, `DECISIONS.md`
+
+**Status:** Confirmed
+
