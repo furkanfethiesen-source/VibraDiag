@@ -49,6 +49,11 @@ class DiagnosisResponse(BaseModel):
 
     primary_fault: str | None = Field(default=None, description="Identified primary mechanical or bearing fault")
     primary_fault_data: dict[str, Any] | None = Field(default=None, description="Detailed fault confidence, harmonics, sidebands")
+    is_compound_fault: bool = Field(default=False, description="True if multiple interacting faults (e.g. BSF + BPFI) are co-occurring")
+    secondary_fault_name: str | None = Field(default=None, description="Co-occurring / secondary fault name if compound defect")
+    secondary_fault_abbr: str | None = Field(default=None, description="Secondary fault abbreviation (e.g. BPFI, BSF)")
+    co_occurring_faults: list[dict[str, Any]] = Field(default_factory=list, description="List of co-occurring strong secondary fault candidates")
+    detected_rpm: float | None = Field(default=None, description="Automatically extracted/evaluated shaft speed in RPM")
     iso_severity: ISOSeverityDTO | None = Field(default=None, description="ISO 2372 / 10816 evaluation")
     severity_alert: str | None = Field(default=None, description="Emergency directive if in Danger zone (Zone D)")
 
@@ -82,6 +87,11 @@ class SignalAnalysisResponse(BaseModel):
     signal_id: str | None = None
     primary_fault: str | None = None
     primary_fault_data: dict[str, Any] | None = None
+    is_compound_fault: bool = False
+    secondary_fault_name: str | None = None
+    secondary_fault_abbr: str | None = None
+    co_occurring_faults: list[dict[str, Any]] = Field(default_factory=list)
+    detected_rpm: float | None = None
     iso_severity: ISOSeverityDTO | None = None
     severity_alert: str | None = None
     time_domain_stats: TimeDomainStatsDTO | None = None

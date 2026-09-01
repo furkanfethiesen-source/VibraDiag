@@ -150,8 +150,9 @@ class SignalService:
 
         try:
             loaded = SignalReaderFactory.load(str(path), expected_fs=expected_fs)
-            if loaded.rpm and "rpm" not in meta_dict:
-                meta_dict["rpm"] = float(loaded.rpm)
+            if loaded.rpm and float(loaded.rpm) > 0:
+                if "rpm" not in meta_dict or meta_dict.get("rpm") == 1797.0:
+                    meta_dict["rpm"] = float(loaded.rpm)
             if loaded.fs and "fs" not in meta_dict:
                 meta_dict["fs"] = float(loaded.fs)
             return loaded, meta_dict
@@ -225,10 +226,21 @@ class SignalService:
 
         formatted_plots = self._format_plots(plots_dict, plot_format)
 
+        is_compound = bool(dsp_output.get("is_compound_fault", False) or fault_summary.get("is_compound_fault", False))
+        secondary_name = dsp_output.get("secondary_fault_name") or fault_summary.get("secondary_fault_name")
+        secondary_abbr = dsp_output.get("secondary_fault_abbr") or fault_summary.get("secondary_fault_abbr")
+        co_occurring = dsp_output.get("co_occurring_faults") or fault_summary.get("co_occurring_faults") or []
+        detected_rpm = dsp_output.get("detected_rpm") or sig_res.get("rpm")
+
         return SignalAnalysisResponse(
             signal_id=str(signal_file_path) if str(signal_file_path) in self._signal_registry else None,
             primary_fault=primary_fault,
             primary_fault_data=fault_summary,
+            is_compound_fault=is_compound,
+            secondary_fault_name=secondary_name,
+            secondary_fault_abbr=secondary_abbr,
+            co_occurring_faults=co_occurring,
+            detected_rpm=float(detected_rpm) if detected_rpm else None,
             iso_severity=iso_dto,
             severity_alert=severity_alert,
             time_domain_stats=time_domain_dto,

@@ -84,7 +84,7 @@ class GraphService:
     ) -> DiagnosisResponse:
         """Converts raw VibraDiagMainState dictionary to typed DiagnosisResponse DTO."""
         route_decision = final_state.get("route_decision", "unknown")
-        llm_response = final_state.get("llm_response", "").strip()
+        llm_response = (final_state.get("llm_response") or "").strip()
         errors = final_state.get("errors") or []
 
         primary_fault = final_state.get("primary_fault")
@@ -175,6 +175,18 @@ class GraphService:
             ResponseStatus.WARNING if final_state.get("is_flagged") else ResponseStatus.SUCCESS
         )
 
+        is_compound = bool(final_state.get("is_compound_fault", False) or (primary_fault_data and primary_fault_data.get("is_compound_fault", False)))
+        secondary_name = final_state.get("secondary_fault_name") or (primary_fault_data and primary_fault_data.get("secondary_fault_name"))
+        secondary_abbr = final_state.get("secondary_fault_abbr") or (primary_fault_data and primary_fault_data.get("secondary_fault_abbr"))
+        co_occurring = final_state.get("co_occurring_faults") or (primary_fault_data and primary_fault_data.get("co_occurring_faults")) or []
+        raw_rpm = final_state.get("detected_rpm") or (sig_res and sig_res.get("rpm"))
+        detected_rpm = None
+        if raw_rpm is not None:
+            try:
+                detected_rpm = float(raw_rpm)
+            except (ValueError, TypeError):
+                detected_rpm = None
+
         return DiagnosisResponse(
             status=status,
             session_id=session_id,
@@ -182,6 +194,11 @@ class GraphService:
             answer=llm_response,
             primary_fault=primary_fault,
             primary_fault_data=primary_fault_data,
+            is_compound_fault=is_compound,
+            secondary_fault_name=secondary_name,
+            secondary_fault_abbr=secondary_abbr,
+            co_occurring_faults=co_occurring,
+            detected_rpm=detected_rpm,
             iso_severity=iso_dto,
             severity_alert=severity_alert,
             time_domain_stats=time_domain_dto,
