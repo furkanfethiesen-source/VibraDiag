@@ -240,12 +240,13 @@ def _dynamic_tolerance(
     harmonic,
     base_freq: float = 1.0,
     min_abs_tol_hz: float = 0.5,
+    max_abs_tol_hz: float = 2.5,
     tolerance_ratio: float = 0.015,
     alpha: float = 0.10,
     tolerance_hz: float | None = None,
 ):
     """
-    Tolerance(h) = max(min_abs_tol_hz, (base_freq * h) * tolerance_ratio) * (1 + alpha * (h - 1)).
+    Tolerance(h) = min(max_abs_tol_hz, max(min_abs_tol_hz, (base_freq * h) * tolerance_ratio) * (1 + alpha * (h - 1))).
 
     Works with scalar or numpy array `harmonic`.
     Proportional tolerance prevents over-wide windows for low-frequency faults (FTF ~12 Hz)
@@ -258,7 +259,8 @@ def _dynamic_tolerance(
         freq_targets = base_freq * harm
         base_tol = np.maximum(min_abs_tol_hz, freq_targets * tolerance_ratio)
 
-    return base_tol * (1.0 + alpha * (harm - 1.0))
+    raw_tol = base_tol * (1.0 + alpha * (harm - 1.0))
+    return np.minimum(raw_tol, max_abs_tol_hz)
 
 
 def _get_local_baseline(
@@ -364,6 +366,41 @@ def _check_sidebands(
         "n_sidebands_matched": len(matched_sidebands),
         "matched_sidebands": matched_sidebands,
         "total_sideband_energy": round(total_sideband_energy, 4),
+    }
+
+
+def compute_cepstrum_spacing(
+    envelope_freqs: np.ndarray,
+    envelope_magnitude: np.ndarray,
+    min_spacing_hz: float = 5.0,
+    max_spacing_hz: float = 100.0,
+) -> dict[str, Any]:
+    """
+    Computes Power Cepstrum of the envelope spectrum to identify the dominant
+    periodic harmonic/sideband spacing (Quefrency peak).
+    Useful for separating dense sideband families (e.g. 1X spacing = 29.5 Hz).
+    """
+    pos_mask = (envelope_freqs >= 1.0) & (envelope_magnitude > 0)
+    if not np.any(pos_mask) or len(envelope_magnitude[pos_mask]) < 64:
+        return {"dominant_spacing_hz": None, "quefrency_peaks": []}
+
+    log_spec = np.log(envelope_magnitude[pos_mask] + 1e-12)
+    cepstrum = np.abs(np.fft.rfft(log_spec))
+    df = float(envelope_freqs[1] - envelope_freqs[0]) if len(envelope_freqs) > 1 else 1.0
+    quefrency = np.fft.rfftfreq(len(log_spec), d=df)
+
+    valid = (quefrency > 0) & (1.0 / (quefrency + 1e-12) >= min_spacing_hz) & (1.0 / (quefrency + 1e-12) <= max_spacing_hz)
+    if not np.any(valid):
+        return {"dominant_spacing_hz": None, "quefrency_peaks": []}
+
+    valid_cep = cepstrum[valid]
+    valid_q = quefrency[valid]
+    best_idx = int(np.argmax(valid_cep))
+    dom_spacing = round(float(1.0 / (valid_q[best_idx] + 1e-12)), 2)
+
+    return {
+        "dominant_spacing_hz": dom_spacing,
+        "cepstrum_peak_amp": round(float(valid_cep[best_idx]), 4),
     }
 
 
@@ -514,10 +551,12 @@ def match_peaks(freqs: np.ndarray, magnitude: np.ndarray, fault_freqs: dict,
             "sidebands": sideband_info,
         }
 
-    max_sev = max((v["severity"] for v in results.values()), default=0.0)
+    # For relative severity normalization across direct impact bearing faults, exclude FTF (sub-synchronous cage modulation)
+    impact_severities = [v["severity"] for k, v in results.items() if k != "FTF"]
+    max_sev = max(impact_severities, default=0.0)
     if max_sev > 0:
         for fault_name, data in results.items():
-            if data["severity"] > 0:
+            if fault_name != "FTF" and data["severity"] > 0:
                 sev_rel = data["severity"] / max_sev
                 if sev_rel < 0.25:
                     data["confidence"] = round(data["confidence"] * max(0.40, sev_rel * 2.0), 2)

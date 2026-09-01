@@ -519,6 +519,11 @@ def signal_processing_subgraph_node(parent_state: VibraDiagMainState) -> dict:
             subgraph_input["loaded_signal"] = SignalReaderFactory.load(str(signal_file), expected_fs=expected_fs)
 
     state = dict(subgraph_input)
+    loaded_sig = state.get("loaded_signal")
+    if loaded_sig and getattr(loaded_sig, "rpm", None) is not None and loaded_sig.rpm > 0:
+        # Prioritize exact embedded RPM from signal header/encoder over default UI input
+        state["rpm"] = float(loaded_sig.rpm)
+
     iso_res = iso_check_node(state)
     state.update(iso_res)
 
@@ -537,11 +542,17 @@ def signal_processing_subgraph_node(parent_state: VibraDiagMainState) -> dict:
         recip_res = reciprocating_expert_node(state)
         state.update(recip_res)
 
+    ch_energy_map = None
+    if loaded_sig and hasattr(loaded_sig, "channels") and loaded_sig.channels:
+        import numpy as np
+        ch_energy_map = {ch: float(np.sqrt(np.mean(sig**2))) for ch, sig in loaded_sig.channels.items()}
+
     from deterministic_tools.fault_analyzer import pick_primary_fault
     fault_summary = pick_primary_fault(
         direct_spectrum_diagnosis=state.get("direct_spectrum_diagnosis"),
         envelope_diagnosis=state.get("envelope_diagnosis"),
         reciprocating_diagnosis=state.get("reciprocating_diagnosis"),
+        channel_energy_map=ch_energy_map,
     )
     state["primary_fault_data"] = fault_summary
     state["primary_fault"] = fault_summary.get("primary_fault_name")
@@ -552,6 +563,11 @@ def signal_processing_subgraph_node(parent_state: VibraDiagMainState) -> dict:
     dsp_output = map_subgraph_to_parent(state)
     dsp_output["primary_fault"] = fault_summary.get("primary_fault_name")
     dsp_output["primary_fault_data"] = fault_summary
+    dsp_output["detected_rpm"] = state.get("rpm")
+    dsp_output["is_compound_fault"] = fault_summary.get("is_compound_fault", False)
+    dsp_output["secondary_fault_name"] = fault_summary.get("secondary_fault_name")
+    dsp_output["secondary_fault_abbr"] = fault_summary.get("secondary_fault_abbr")
+    dsp_output["co_occurring_faults"] = fault_summary.get("co_occurring_faults", [])
     dsp_output.update(plots_res)
     return dsp_output
 

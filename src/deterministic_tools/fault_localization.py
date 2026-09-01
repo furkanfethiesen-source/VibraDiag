@@ -52,6 +52,7 @@ from deterministic_tools.signal_processing import (
     calc_fault_freqs,
     envelope_fft,
     hilbert_envelope,
+    is_kurtogram_reliable,
     match_peaks,
     select_band,
 )
@@ -89,7 +90,10 @@ def run_channel_pipeline(signal: np.ndarray, fs: float, fault_freqs: dict,
     if override_band is not None:
         band = override_band
     else:
-        band, _ = select_band(signal, fs, nlevels=nlevels)
+        band, kurt = select_band(signal, fs, nlevels=nlevels)
+        if not is_kurtogram_reliable(signal, fs, kurt):
+            from deterministic_tools.empirical_band_rules import select_band_empirical
+            band = select_band_empirical(fr * 60.0)["band_hz"]
 
     filtered = bandpass_filter(signal, fs, band)
     envelope = hilbert_envelope(filtered)
@@ -106,28 +110,41 @@ def run_channel_pipeline(signal: np.ndarray, fs: float, fault_freqs: dict,
     )
 
 
-def analyze_multichannel(loaded: LoadedSignal, rpm: float, n_balls: int,
-                        ball_diameter: float, pitch_diameter: float,
+def analyze_multichannel(loaded: LoadedSignal, rpm: float, n_balls: int = 9,
+                        ball_diameter: float = 7.94, pitch_diameter: float = 39.04,
                         contact_angle_deg: float = 0.0,
+                        fe_bearing_params: dict | None = None,
                         n_harmonics: int = 3,
                         tolerance_hz: float = 2.0,
                         override_band: tuple | None = None) -> dict[str, ChannelAnalysis]:
     """LoadedSignal'daki her kanalda (DE/FE/BA/main) bagimsiz zarf analizi
-    calistirir. Ariza frekanslari tum kanallar icin ayni rulman geometrisi
-    ve RPM'den hesaplanir (ayni sart uzerindeki farkli sensorler).
+    calistirir. DE/BA kanallari Drive End geometrisiyle (SKF 6205),
+    FE kanali ise Fan End geometrisiyle (SKF 6203) taranir.
 
     override_band verilirse TUM kanallarda ayni bant kullanilir (her
     kanalda ayri kurtogram calismaz) — bkz. run_channel_pipeline."""
     fr = rpm / 60.0
-    fault_freqs = calc_fault_freqs(
+    de_fault_freqs = calc_fault_freqs(
         rpm=rpm, n_balls=n_balls, ball_diameter=ball_diameter,
         pitch_diameter=pitch_diameter, contact_angle_deg=contact_angle_deg,
     )
 
+    if fe_bearing_params and isinstance(fe_bearing_params, dict):
+        fe_fault_freqs = calc_fault_freqs(
+            rpm=rpm,
+            n_balls=int(fe_bearing_params.get("n_balls", n_balls)),
+            ball_diameter=float(fe_bearing_params.get("ball_diameter", ball_diameter)),
+            pitch_diameter=float(fe_bearing_params.get("pitch_diameter", pitch_diameter)),
+            contact_angle_deg=float(fe_bearing_params.get("contact_angle_deg", contact_angle_deg)),
+        )
+    else:
+        fe_fault_freqs = de_fault_freqs
+
     results: dict[str, ChannelAnalysis] = {}
     for channel_name, signal in loaded.channels.items():
+        ch_freqs = fe_fault_freqs if str(channel_name).upper() == "FE" else de_fault_freqs
         analysis = run_channel_pipeline(
-            signal, loaded.fs, fault_freqs,
+            signal, loaded.fs, ch_freqs,
             n_harmonics=n_harmonics, tolerance_hz=tolerance_hz,
             override_band=override_band, fr=fr,
         )

@@ -83,7 +83,9 @@ def rotating_expert_node(state: SignalProcessingInternalState) -> dict:
     kanal uzerinden match_ratio_pattern.
     """
     loaded: LoadedSignal = state["loaded_signal"]
-    band = state.get("final_band") or state["kurtogram_band"]
+    # If fallback band was explicitly triggered due to unreliable kurtogram, use it as override.
+    # Otherwise, pass override_band=None so each channel calculates its own optimal kurtogram band independently.
+    override_band = state.get("final_band") if not state.get("kurtogram_reliable", True) else None
 
     rpm = state.get("rpm", 1797.0)
     channel_analyses = analyze_multichannel(
@@ -93,7 +95,7 @@ def rotating_expert_node(state: SignalProcessingInternalState) -> dict:
         ball_diameter=state.get("ball_diameter", 0.3126),
         pitch_diameter=state.get("pitch_diameter", 1.537),
         contact_angle_deg=state.get("contact_angle_deg", 0.0),
-        override_band=band,
+        override_band=override_band,
     )
     envelope_diagnosis = {ch: a.fault_results for ch, a in channel_analyses.items()}
     localization = localize_fault(channel_analyses)
