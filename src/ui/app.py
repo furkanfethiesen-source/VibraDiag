@@ -141,6 +141,7 @@ def build_machine_metadata(sidebar_params: dict) -> dict[str, Any]:
             "ball_diameter": sidebar_params.get("ball_diameter"),
             "pitch_diameter": sidebar_params.get("pitch_diameter"),
             "contact_angle_deg": sidebar_params.get("contact_angle_deg"),
+            "fe_bearing_params": sidebar_params.get("fe_bearing"),
         })
     elif sidebar_params.get("machine_type") == "reciprocating":
         meta.update({
@@ -227,17 +228,23 @@ def handle_file_upload(
         signal_id = result.get("signal_id", "")
         channels = result.get("channels", [])
         detected_fs = result.get("fs")
+        detected_rpm = result.get("rpm")
         duration = result.get("duration_seconds")
 
         st.session_state.uploaded_signal_id = signal_id
         st.session_state.uploaded_filename = uploaded_file.name
 
+        if detected_rpm and detected_rpm > 0:
+            st.session_state["detected_rpm"] = float(detected_rpm)
+
         # Build info string
         info_parts = []
         if detected_fs:
             info_parts.append(f"{int(detected_fs)} Hz")
+        if detected_rpm:
+            info_parts.append(f"{detected_rpm:.1f} RPM")
         if channels:
-            info_parts.append(f"{len(channels)} ch")
+            info_parts.append(f"{len(channels)} ch ({', '.join(channels)})")
         if duration:
             info_parts.append(f"{duration:.1f}s")
         info_str = ", ".join(info_parts)
@@ -249,11 +256,12 @@ def handle_file_upload(
 
         # Add to chat
         add_assistant_message(
-            text=f"✅ Signal uploaded successfully: **{uploaded_file.name}**",
+            text=f"✅ Sinyal başarıyla yüklendi: **{uploaded_file.name}**\n\n⚡ *Otomatik Algılanan Parametreler: {info_str}*",
             file_chip={"filename": uploaded_file.name, "info": f"({info_str})"},
         )
 
         st.toast(f"✅ Uploaded: {uploaded_file.name}", icon="📁")
+        st.rerun()
 
 
 # ---------------------------------------------------------------------------
