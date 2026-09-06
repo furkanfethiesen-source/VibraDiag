@@ -115,7 +115,7 @@ def generate_benchmark(full: bool = False) -> list[dict[str, Any]]:
             question = item["question"]
             gt_answer = item["ground_truth_answer"]
             fault_type = item.get("fault_type", "general")
-            exp_chunk_ids = item.get("expected_chunk_ids", [])
+            exp_chunk_ids = item.get("expected_child_chunk_ids") or item.get("expected_chunk_ids", []) or item.get("expected_parent_chunk_ids", [])
 
             matched_chunks = [
                 {"id": cid, "text": chunks_dict.get(cid, "Örnek teknik standart metni.")}
@@ -233,7 +233,7 @@ def generate_benchmark(full: bool = False) -> list[dict[str, Any]]:
             question = item["question"]
             gt_answer = item["ground_truth_answer"]
             fault_type = item.get("fault_type", "general")
-            exp_chunk_ids = item.get("expected_chunk_ids", [])
+            exp_chunk_ids = item.get("expected_child_chunk_ids") or item.get("expected_chunk_ids", []) or item.get("expected_parent_chunk_ids", [])
 
             matched_chunks = [
                 {"id": cid, "text": chunks_dict.get(cid, "Örnek teknik standart metni.")}
