@@ -14,6 +14,7 @@ from config_loader import load_prompts_cfg
 
 
 from deterministic_tools.fault_analyzer import pick_primary_fault
+from deterministic_tools.signal_processing import calc_fault_freqs
 
 
 def build_signal_context(signal_data: dict[str, Any] | None) -> str:
@@ -36,10 +37,15 @@ def build_signal_context(signal_data: dict[str, Any] | None) -> str:
     lines = ["=== SİNYAL ANALİZİ VE ARİZA BULGULARI ==="]
 
     metadata = signal_data.get("machine_metadata") or signal_data.get("metadata") or {}
+    machine_name = ""
+    machine_type = ""
+    rpm = 0.0
+    point = ""
+
     if isinstance(metadata, dict):
         machine_name = metadata.get("machine_name", "")
         machine_type = metadata.get("machine_type", "")
-        rpm = metadata.get("rpm", 0.0)
+        rpm = float(metadata.get("rpm", 0.0) or signal_data.get("rpm", 0.0) or 0.0)
         point = metadata.get("measurement_point", "")
         if machine_name or machine_type or rpm:
             lines.append(
@@ -47,9 +53,38 @@ def build_signal_context(signal_data: dict[str, Any] | None) -> str:
                 + (f" | Ölçüm Noktası: {point}" if point else "")
             )
     elif hasattr(metadata, "machine_name"):
+        machine_name = getattr(metadata, "machine_name", "")
+        machine_type = getattr(metadata, "machine_type", "")
+        rpm = float(getattr(metadata, "rpm", 0.0) or signal_data.get("rpm", 0.0) or 0.0)
         lines.append(
-            f"- Makine Bilgisi: {metadata.machine_name} | Tip: {metadata.machine_type} | RPM: {metadata.rpm}"
+            f"- Makine Bilgisi: {machine_name} | Tip: {machine_type} | RPM: {rpm}"
         )
+
+    if rpm > 0 and machine_type != "reciprocating":
+        n_balls = int((metadata.get("n_balls") if isinstance(metadata, dict) else getattr(metadata, "n_balls", None)) or signal_data.get("n_balls") or 9)
+        ball_diam = float((metadata.get("ball_diameter") if isinstance(metadata, dict) else getattr(metadata, "ball_diameter", None)) or signal_data.get("ball_diameter") or 7.94)
+        pitch_diam = float((metadata.get("pitch_diameter") if isinstance(metadata, dict) else getattr(metadata, "pitch_diameter", None)) or signal_data.get("pitch_diameter") or 39.04)
+        contact_deg = float((metadata.get("contact_angle_deg") if isinstance(metadata, dict) else getattr(metadata, "contact_angle_deg", None)) or signal_data.get("contact_angle_deg") or 0.0)
+
+        try:
+            ff = calc_fault_freqs(
+                rpm=rpm,
+                n_balls=n_balls,
+                ball_diameter=ball_diam,
+                pitch_diameter=pitch_diam,
+                contact_angle_deg=contact_deg,
+            )
+            fr = rpm / 60.0
+            lines.append(
+                f"- Deterministik Kinematik Rulman & Şaft Frekansları (Şaft Hızı: {rpm:.1f} RPM, 1X Temel Frekans = {fr:.2f} Hz):\n"
+                f"  * BPFI (İç Bilezik Geçiş Frekansı): {ff['BPFI']:.2f} Hz ({ff['BPFI'] / fr:.2f}X)\n"
+                f"  * BPFO (Dış Bilezik Geçiş Frekansı): {ff['BPFO']:.2f} Hz ({ff['BPFO'] / fr:.2f}X)\n"
+                f"  * BSF (Bilya Dönme Frekansı): {ff['BSF']:.2f} Hz ({ff['BSF'] / fr:.2f}X), 2BSF = {ff['2BSF']:.2f} Hz ({ff['2BSF'] / fr:.2f}X)\n"
+                f"  * FTF (Kafes Geçiş Frekansı): {ff['FTF']:.2f} Hz ({ff['FTF'] / fr:.2f}X)\n"
+                "  * ÖNEMLİ: Frekans ve order (1X, 2X, ...) ilişkilerinde YALNIZCA bu kesin deterministik değerleri referans al; yaklaşık veya uydurma frekans formülleri üretme."
+            )
+        except Exception:
+            pass
 
     td_stats = signal_data.get("time_domain_stats") or {}
     rms = td_stats.get("overall_rms") or signal_data.get("overall_rms") or signal_data.get("vibration_velocity_rms_mm_s")

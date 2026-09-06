@@ -30,12 +30,12 @@ class GroqClient:
 
     def __init__(self, config: dict[str, Any] | None = None, api_key: str | None = None):
         app_cfg = load_appcfg()
-        llm_cfg = app_cfg.llm if hasattr(app_cfg, "llm") else {}
+        llm_cfg = dict(app_cfg.llm) if hasattr(app_cfg, "llm") and app_cfg.llm else {}
 
-        provided_cfg = config or llm_cfg
+        provided_cfg = {**llm_cfg, **(config or {})}
         self.model = provided_cfg.get("model", "openai/gpt-oss-120b")
-        self.temperature = provided_cfg.get("temperature", 0.2)
-        self.max_tokens = provided_cfg.get("max_tokens", 4096)
+        self.temperature = float(provided_cfg.get("temperature", 0.2))
+        self.max_tokens = int(provided_cfg.get("max_tokens", 1500))
         self.reasoning_format = provided_cfg.get("reasoning_format", "parsed")
 
         self.api_key = api_key or os.getenv("GROQ_API_KEY")
