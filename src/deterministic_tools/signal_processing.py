@@ -372,8 +372,9 @@ def _check_sidebands(
 def compute_cepstrum_spacing(
     envelope_freqs: np.ndarray,
     envelope_magnitude: np.ndarray,
-    min_spacing_hz: float = 5.0,
-    max_spacing_hz: float = 100.0,
+    min_spacing_hz: float = 15.0,
+    max_spacing_hz: float = 60.0,
+    expected_spacing_hz: float | None = None,
 ) -> dict[str, Any]:
     """
     Computes Power Cepstrum of the envelope spectrum to identify the dominant
@@ -389,18 +390,27 @@ def compute_cepstrum_spacing(
     df = float(envelope_freqs[1] - envelope_freqs[0]) if len(envelope_freqs) > 1 else 1.0
     quefrency = np.fft.rfftfreq(len(log_spec), d=df)
 
-    valid = (quefrency > 0) & (1.0 / (quefrency + 1e-12) >= min_spacing_hz) & (1.0 / (quefrency + 1e-12) <= max_spacing_hz)
+    if expected_spacing_hz is not None and expected_spacing_hz > 0:
+        low_bound = expected_spacing_hz * 0.88
+        high_bound = expected_spacing_hz * 1.12
+    else:
+        low_bound = min_spacing_hz
+        high_bound = max_spacing_hz
+
+    valid = (quefrency > 0) & (1.0 / (quefrency + 1e-12) >= low_bound) & (1.0 / (quefrency + 1e-12) <= high_bound)
     if not np.any(valid):
         return {"dominant_spacing_hz": None, "quefrency_peaks": []}
 
-    valid_cep = cepstrum[valid]
-    valid_q = quefrency[valid]
-    best_idx = int(np.argmax(valid_cep))
-    dom_spacing = round(float(1.0 / (valid_q[best_idx] + 1e-12)), 2)
+    valid_indices = np.where(valid)[0]
+    best_sub_idx = int(np.argmax(cepstrum[valid]))
+    best_idx = valid_indices[best_sub_idx]
+
+    refined_q, refined_amp = _parabolic_peak_refine(cepstrum, best_idx, quefrency)
+    dom_spacing = round(float(1.0 / (refined_q + 1e-12)), 2)
 
     return {
         "dominant_spacing_hz": dom_spacing,
-        "cepstrum_peak_amp": round(float(valid_cep[best_idx]), 4),
+        "cepstrum_peak_amp": round(float(refined_amp), 4),
     }
 
 

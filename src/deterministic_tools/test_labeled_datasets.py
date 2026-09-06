@@ -15,22 +15,12 @@ import json
 import sys
 from pathlib import Path
 from typing import Any
-
-# Add src to sys.path if not present
-_src_dir = str(Path(__file__).resolve().parent.parent)
-if _src_dir not in sys.path:
-    sys.path.insert(0, _src_dir)
-
 import numpy as np
-
 from deterministic_tools.fault_analyzer import pick_primary_fault
 from deterministic_tools.fault_localization import analyze_multichannel
 from deterministic_tools.reader import SignalReaderFactory
 
-
-# CWRU Bilinen Referans Zemin Gerçekleri (Ground Truth)
 KNOWN_GROUND_TRUTH: dict[str, dict[str, Any]] = {
-    # BPFI - İç Bilezik Arızası
     "105.mat": {"expected_fault": "BPFI", "expected_channel": "DE", "description": "CWRU 12k DE 0.007\" Inner Race Fault @ 1797 RPM"},
     "108.mat": {"expected_fault": "BPFI", "expected_channel": "DE", "description": "CWRU 12k DE 0.007\" Inner Race Fault @ 1730 RPM"},
     "120.mat": {"expected_fault": "BPFI", "expected_channel": "DE", "description": "CWRU 12k DE 0.014\" Inner Race Fault @ 1748 RPM"},
@@ -40,7 +30,6 @@ KNOWN_GROUND_TRUTH: dict[str, dict[str, Any]] = {
     "3001.mat": {"expected_fault": "BPFI", "expected_channel": "DE", "description": "CWRU 12k DE 0.028\" Inner Race Fault @ 1797 RPM"},
     "3004.mat": {"expected_fault": "BPFI", "expected_channel": "DE", "description": "CWRU 12k DE 0.028\" Inner Race Fault @ 1730 RPM"},
 
-    # BSF - Bilye Arızası
     "119.mat": {"expected_fault": "BSF",  "expected_channel": "DE", "description": "CWRU 12k DE 0.007\" Ball Fault @ 1772 RPM"},
     "185.mat": {"expected_fault": "BSF",  "expected_channel": "DE", "description": "CWRU 12k DE 0.014\" Ball Fault @ 1797 RPM"},
     "187.mat": {"expected_fault": "BSF",  "expected_channel": "DE", "description": "CWRU 12k DE 0.014\" Ball Fault @ 1749 RPM"},
@@ -48,7 +37,6 @@ KNOWN_GROUND_TRUTH: dict[str, dict[str, Any]] = {
     "3006.mat": {"expected_fault": "BSF",  "expected_channel": "DE", "description": "CWRU 12k DE 0.028\" Ball Fault @ 1772 RPM"},
     "3007.mat": {"expected_fault": "BSF",  "expected_channel": "DE", "description": "CWRU 12k DE 0.028\" Ball Fault @ 1750 RPM"},
 
-    # BPFO - Dış Bilezik Arızası
     "131.mat": {"expected_fault": "BPFO", "expected_channel": "DE", "description": "CWRU 12k DE 0.007\" Outer Race Fault @ 1772 RPM"},
     "133.mat": {"expected_fault": "BPFO", "expected_channel": "DE", "description": "CWRU 12k DE 0.007\" Outer Race Fault @ 1725 RPM"},
     "146.mat": {"expected_fault": "BPFO", "expected_channel": "DE", "description": "CWRU 12k DE 0.014\" Outer Race Fault @ 1772 RPM"},
@@ -96,11 +84,9 @@ def run_benchmark(
         fs = float(loaded.fs or 12000.0)
         rpm = float(loaded.rpm or 1749.0)
 
-        # 2. Kanal Fiziksel Enerji Haritası (RMS & Peak)
         rms_map = {ch: float(np.sqrt(np.mean(sig**2))) for ch, sig in loaded.channels.items()}
         rms_str = ", ".join([f"{ch}:{v:.4f}" for ch, v in rms_map.items()])
 
-        # 3. Çok Kanallı Zarf Analizi
         analyses = analyze_multichannel(
             loaded=loaded,
             rpm=rpm,
@@ -113,7 +99,6 @@ def run_benchmark(
 
         envelope_diag = {ch: a.fault_results for ch, a in analyses.items()}
 
-        # 4. Birincil Arıza Çözümleme (Kanal Enerji Ağırlıklı & Adaptif SFER)
         primary = pick_primary_fault(
             direct_spectrum_diagnosis={},
             envelope_diagnosis=envelope_diag,
@@ -134,7 +119,6 @@ def run_benchmark(
         co_occurring = primary.get("co_occurring_faults", [])
         co_abbrs = [c.get("abbr") for c in co_occurring]
 
-        # 5. Eşleşen Harmonikler ve Yan Bant Detayları
         dom_analysis = analyses.get(dominant_ch)
         filter_band_used = f"{dom_analysis.band[0]:.1f}-{dom_analysis.band[1]:.1f} Hz" if dom_analysis else "N/A"
         
@@ -149,14 +133,17 @@ def run_benchmark(
         sideband_count = int(sideband_info.get("n_sidebands_matched", 0) or 0)
         sideband_energy = float(sideband_info.get("total_sideband_energy", 0.0) or 0.0)
 
-        # Cepstrum yan bant aralığı tahmini
         cep_spacing = None
         if dom_analysis and len(dom_analysis.envelope_freqs) > 0:
             from deterministic_tools.signal_processing import compute_cepstrum_spacing
-            cep_res = compute_cepstrum_spacing(dom_analysis.envelope_freqs, dom_analysis.envelope_magnitude)
+            fr_val = rpm / 60.0 if rpm else None
+            cep_res = compute_cepstrum_spacing(
+                dom_analysis.envelope_freqs,
+                dom_analysis.envelope_magnitude,
+                expected_spacing_hz=fr_val,
+            )
             cep_spacing = cep_res.get("dominant_spacing_hz")
 
-        # Doğrulama Durumu
         if expected_abbr != "UNKNOWN":
             if detected_abbr == expected_abbr:
                 status = "MATCH"
@@ -197,7 +184,6 @@ def run_benchmark(
         comp_str = f" + Eşlik Eden: {secondary_abbr}" if is_compound else ""
         print(f"{icon} {fname:10s} | Beklenen: {expected_abbr:4s} | Tespit: {detected_abbr:4s}{comp_str} [{dominant_ch}] | Güven: {conf:.2f} | Şiddet: {sev:.2f} | Skor: {final_score:.3f} | Durum: {status}")
 
-    # CSV Kaydetme
     if records:
         fieldnames = list(records[0].keys())
         with open(out_csv, mode="w", newline="", encoding="utf-8") as f:
