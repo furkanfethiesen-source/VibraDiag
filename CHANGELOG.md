@@ -135,3 +135,14 @@ This file is used to record significant changes throughout the project on a date
 
 ### Fixed
 - Key optimizations implemented in DSP pipeline including physical channel energy weighting and power cepstrum quefrency spacing analysis (See [DECISIONS.md: Physical Channel Energy Weighting](DECISIONS.md#210-dsp-physical-channel-energy-weighting-in-multi-channel-fault-arbitration), [DECISIONS.md: Power Cepstrum Quefrency Analysis](DECISIONS.md#212-dsp-power-cepstrum-quefrency-analysis-for-sideband-harmonic-spacing)).
+
+---
+
+## [2026-09-02 — 2026-09-06] — Preparing more detailed evaluation files
+### Added
+- Created isolated DSP evaluation pipeline to grasp the weaknesses of the deterministic pipeline (See [DECISIONS.md: RAGAS + Deterministic Evaluation Metrics](DECISIONS.md#71-evaluation-ragas--deterministic-evaluation-metrics)).
+- Created notebooks to give a detailed interpretation of the evaluation results.
+- Implemented a prompt A/B test and NLI diagnoser, which was done to show the fact that RAGAS metrics and system's faults are different and should be separated (See [DECISIONS.md: Using NLI to Separate Weaknesses of The System and RAGAS Metrics](DECISIONS.md#73-evaluation-using-nli-to-separate-weaknesses-of-the-system-and-ragas-metrics), [DECISIONS.md: Implementing Prompt A/B Test](DECISIONS.md#74-evaluation-implementing-prompt-ab-test-strict-vs-enriched-generation)).
+  
+### Changed
+- Cepstrum analysis function was modified to be more suitable for its purpose (See [DECISIONS.md: Power Cepstrum Quefrency Analysis](DECISIONS.md#212-dsp-power-cepstrum-quefrency-analysis-for-sideband-harmonic-spacing)).
