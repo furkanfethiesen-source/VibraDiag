@@ -29,9 +29,14 @@ def render_fault_panel(diagnosis_response: dict) -> None:
     }
     dominant_label = channel_name_map.get(dominant_channel, dominant_channel)
 
-    # 1. Header Card (Primary Fault + Dominant Source + Severity)
+    is_compound = bool(fault_data.get("is_compound_fault") or diagnosis_response.get("is_compound_fault", False))
+    secondary_fault_name = fault_data.get("secondary_fault_name") or diagnosis_response.get("secondary_fault_name") or ""
+    secondary_fault_abbr = fault_data.get("secondary_fault_abbr") or diagnosis_response.get("secondary_fault_abbr") or ""
+
+    # 1. Header Card (Primary Fault + Dominant Source + Compound Badge + Severity)
     source_badge = f'<div style="display: inline-block; margin-top: 5px; padding: 2px 8px; background-color: #333; border: 1px solid #D4AF37; border-radius: 4px; font-size: 0.78em; color: #D4AF37;">🎯 Ana Kaynak: {dominant_label}</div>' if dominant_label else ''
     sev_badge = f'<div style="color: #AAA; font-size: 0.85em; margin-top: 3px;">Arıza Şiddeti (Severity): <strong style="color: #FFF;">{primary_severity:.1f}</strong></div>' if primary_severity > 0 else ''
+    compound_badge = f'<div style="margin-top: 6px; padding: 4px 8px; background-color: rgba(212, 175, 55, 0.15); border: 1px solid #D4AF37; border-radius: 4px; font-size: 0.82em; color: #E0E0E0;">🔗 <strong>Birleşik Arıza:</strong> {fault_type_abbr} + {secondary_fault_name}</div>' if (is_compound and secondary_fault_name) else ''
 
     st.markdown(
         f"""
@@ -41,6 +46,7 @@ def render_fault_panel(diagnosis_response: dict) -> None:
             <div style="font-size: 2.0em; font-weight: bold; color: {conf_color}; line-height: 1.1; margin-top: 4px;">{confidence * 100:.0f}% <span style="font-size: 0.45em; color: #888; font-weight: normal;">Güven</span></div>
             {sev_badge}
             {source_badge}
+            {compound_badge}
         </div>
         """,
         unsafe_allow_html=True,
