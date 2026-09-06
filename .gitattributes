@@ -1,0 +1,3 @@
+
+# Exclude notebooks from Github linguist analysis
+*.ipynb linguist-detectable=false
