@@ -1,0 +1,167 @@
+﻿_id,fault_type,question,generated_answer,generation_failed,retrieval_error,ground_truth_answer,expected_child_chunk_ids,expected_parent_chunk_ids,expected_visual_chunk_ids,reranked_chunk_ids,retrieved_parent_ids,retrieved_visual_ids,visual_triggered,det_child_recall,det_child_precision,det_child_hit_rate,det_child_mrr,det_child_ndcg,det_parent_recall,det_parent_precision,det_parent_hit_rate,det_parent_mrr,det_parent_ndcg,det_visual_recall,faithfulness,answer_relevancy,llm_context_precision_with_reference,context_recall
+q_005,standards,ISO 10816 standartları ve titreşim şiddet tabloları (Vibration Severity Charts) ne amaçla kullanılır?,"**ISO 10816 standartları ve titreşim şiddet tablolarının (Vibration Severity Charts) kullanım amacı**
+
+- **Makine durumunun değerlendirilmesi**  
+  Ölçülen titreşim değerleri (genellikle RMS hız) bu tablolardaki sınır seviyeleriyle karşılaştırılarak, makinenin **A (iyi), B (kabul edilebilir), C (tolerans içinde) ve D (kabul edilemez)** durumları belirlenir. Böylece operatör ve bakım ekibi, titreşim trendine bakarak olası arızaları erken aşamada tespit eder.
+
+- **Trend izleme ve erken uyarı**  
+  Titremeler zaman içinde izlenerek, şiddet seviyesinin yükselmesi durumunda **önleyici bakım** planlanır. Amaç, titreşim değerlerinin bir “kırılma” noktasına ulaşmasını beklemek yerine, artış trendine dayanarak müdahale etmektir.
+
+- **Filtre seçimi ve ölçüm bandı belirleme**  
+  ISO 10816, makine dönüş hızıyla ilişkili olarak uygun ölçüm filtresini (10‑1000 Hz veya 2‑1000 Hz) tanımlar. Bu, ölçümün ilgili frekans bileşenlerine odaklanmasını ve gereksiz düşük‑frekans gürültüsünden kaçınılmasını sağlar.
+
+- **Standartlaştırılmış kıyaslama**  
+  Farklı tipteki makineler (Class I‑IV) ve kurulum koşulları için ayrı sınır değerleri sunularak, **çapraz karşılaştırma** ve **sektörel uyumluluk** sağlanır. Böylece aynı sınıfa ait makineler arasında tutarlı bir değerlendirme yapılabilir.
+
+- **Bakım karar destek sistemi**  
+  Şiddet tablosu, ölçülen titreşim seviyesi hangi aralıkta ise (örneğin “C – tolerans içinde, izlenmesi gerekir”) bakım planlamasını yönlendirir; aşırı seviyelerde (D) acil müdahale gerekliliği vurgulanır.
+
+Özetle, ISO 10816 ve ilgili titreşim şiddet tabloları, **makine sağlığının nicel bir göstergesi** olarak, ölçülen titreşim değerlerini sınıflandırmak, trend analizi yapmak ve bakım‑onarım kararlarını desteklemek amacıyla kullanılır. Bu yaklaşım, mutlak titreşim limitleri belirlemenin zorluğuna rağmen, pratik ve güvenilir bir durum değerlendirme çerçevesi sunar.",False,,"Titreşim şiddet tabloları, ölçülen genlik değerlerinin (ör. RMS hız) makine büyüklüğüne ve montaj tipine göre kabul edilebilir veya tehlikeli sınırlar içinde olup olmadığını değerlendirmek için kullanılır.",text_parent_15_child_4;text_parent_15_child_5;text_parent_15_child_2,text_parent_15,,text_parent_15_child_2;text_parent_15_child_6;text_parent_15_child_4;text_parent_15_child_3;text_parent_17_child_0,text_parent_15;text_parent_17,,False,0.6666666666666666,0.4,1.0,1.0,0.7039180890341347,1.0,0.5,1.0,1.0,1.0,0.0,0.8947368421052632,0.9448905723583875,0.999999999975,1.0
+q_009,signal_processing,FFT analizinde pencereleme (Windowing / Leakage Effect) etkisi neden oluşur ve cam pencere fonksiyonları ne işe yarar?,"**FFT analizinde pencereleme (Leakage) etkisi neden oluşur?**  
+
+- FFT, sınırlı sayıda örnek (N) üzerinden bir periyodik sinyalin spektrumunu hesaplar.  
+- Kayıt uzunluğu sonlu olduğundan, zaman domeninde sinüs dalgası **dikdörtgen bir pencere** (yani “tam kayıt”) ile çarpılır.  
+- Bu çarpma işlemi frekans domeninde **konvolüsyon** anlamına gelir; dikdörtgen pencerenin spektrumu bir “sin x/x” (sinc) fonksiyonudur.  
+- Sinc fonksiyonunun yan lobları (sidelobes) ana frekans bileşeninin enerjisini komşu frekans hatlarına “sızdırır”.  
+- Eğer sinüzoidal bileşenin frekansı, FFT satırlarından (bin) birine tam olarak denk gelmezse (örnekleme frekansı sinüs periyodu ile tam örtüşmez), bu konvolüsyon sonucu **leakage (sızıntı) etkisi** ortaya çıkar ve spektrumda yan loblar görülür.  
+
+**Cam (window) fonksiyonları ne işe yarar?**  
+
+- Pencere fonksiyonları, zaman sinyaline uygulanarak (dikdörtgen yerine) yan lobların seviyesini azaltmayı ve ana lobun (peak) daha doğru bir frekans‑amplitüd tahmini vermesini sağlar.  
+- Farklı pencere tipleri yan lob yüksekliği ve ana lob genişliği arasında farklı denge sağlar:  
+
+| Pencere tipi | Özelliği (belgeye göre) |
+|--------------|------------------------|
+| **Hanning**  | Minimum yan lob seviyesine sahip genel amaçlı pencere; raised‑cosine (cos²) şeklinde tanımlanır. |
+| **Hamming**  | Hanning’den daha düşük yan lob seviyesine sahiptir, fakat yan lob düşüşü (fall‑off) daha yavaştır. |
+| **Blackman** | Daha yüksek yan lob bastırması, daha geniş ana lob. |
+| **Flat‑top** | Amplitüd hatasını en aza indirmek için kullanılır; picket‑fence düzeltmesi uygulanmadığında tercih edilir. |
+| **Kaiser**   | Kullanıcı tarafından belirlenen parametreyle yan lob seviyesi ve ana lob genişliği ayarlanabilir. |
+
+- Pencere seçimi, ölçümde **amplitüd doğruluğu** (yan lobların enerjiyi çalmasını önleme) ve **frekans çözünürlüğü** (ana lobun genişliği) arasında bir uzlaşma sağlar.  
+- Doğru pencere kullanımı, özellikle düşük frekanslı titreşimlerde ve harmonik analizinde, spektrumun yorumlanmasını güvenilir kılar.  
+
+**Özet:**  
+Leakage, sınırlı veri uzunluğunun ve sinyalin FFT satırlarıyla tam hizalanmamasının bir yan etkisidir; sinyal‑pencere çarpımının frekans‑alanında sinc‑benzeri yan loblar oluşturması nedeniyle ortaya çıkar. Cam (window) fonksiyonları bu yan lobları bastırarak spektrumun daha temiz ve doğru bir şekilde gösterilmesini sağlar.  
+
+*(Bu açıklama, verilen dokümantasyon bağlamındaki bilgilerle sınırlıdır; ek sayısal tolerans veya dış standart referansları içermez.)*",False,,"Pencereleme etkisi (leakage), zaman sinyalinin sonlu bir pencereye kesilmesi nedeniyle frekans enerjisinin komşu kanallara sızmasıdır. Hanning veya Hamming gibi pencereler sızıntıyı önler.",text_parent_21_child_0;text_parent_21_child_1;text_parent_21_child_2,text_parent_21,,text_parent_19_child_6;text_parent_21_child_0;text_parent_21_child_3;text_parent_22_child_2;text_parent_21_child_2,text_parent_19;text_parent_21;text_parent_22,,False,0.6666666666666666,0.4,1.0,0.5,0.4776237035032179,1.0,0.3333333333333333,1.0,0.5,0.6309297535714575,0.0,0.7391304347826086,0.9188806151944738,0.5888888888692593,1.0
+q_014,unbalance,Rotorda dengesizlik (Unbalance) arızası spektrumda ve fazda kendini nasıl gösterir?,"**Rotorda dengesizlik (Unbalance) arızasının spektrum ve faz davranışı**
+
+| Durum | Spektral gösterim | Faz ilişkisi |
+|-------|-------------------|--------------|
+| **Genel (tüm dengesizlik tipleri)** | FFT’de **tek belirgin 1× RPM** frekansı hâkimdir. Amplitüd, devir hızıyla **kare oranında** artar. | – |
+| **Statik dengesizlik (Static Unbalance)** | Tek 1× RPM zirvesi, diğer harmoniklerde belirgin bir artış yoktur. | - **In‑phase** ve **kararlı** (≈ 15‑20°). <br>‑ Ölçüm noktasını **dikey → yatay** yönüne kaydırdığınızda faz **≈ 90° (±30°)** kayar. <br>‑ Aynı düzlemde (ör. iki yatak) ölçüm noktasını değiştirirseniz faz **değişmez**. |
+| **Çift dengesizlik (Couple Unbalance)** | Tek 1× RPM zirvesi hâlâ baskındır; amplitüd yine devir hızıyla kare oranında artar. | - İki yatak (veya iki eksen) arasında **≈ 180° faz farkı** görülür. <br>‑ Hem yatay hem de dikey düzlemde bu faz farkı gözlemlenebilir. |
+| **Uçta bulunan rotor (Overhung Rotor) dengesizliği** | Tek 1× RPM zirvesi hâlâ baskındır. | - **Aksiyel** yönde iki yatak arasında **in‑phase** (aynı faz). <br>‑ **Radial** yönde faz **düzensiz / kararsız** (steady değildir). |
+
+**Özet:**  
+- Dengesizlik arızaları spektrumda **öncelikli olarak 1× RPM** frekansında bir tepe gösterir; bu tepe, devir hızıyla kare oranında büyür.  
+- Statik dengesizlikte faz sabittir ve ölçüm yönüne göre 90° kayma gösterir.  
+- Çift dengesizlikte iki ölçüm noktasının (genellikle iki yatak) fazı yaklaşık 180° ters olur.  
+- Uçta bulunan rotor dengesizliğinde aksiyel faz aynı, radial faz ise kararsızdır.
+
+Bu davranışlar, ISO 10816/ISO 20816 titreşim şiddeti sınıflandırma standartları kapsamında “1× RPM’de yüksek titreşim” olarak raporlanabilir.",False,,Dengesizlik arızası radyal yönde baskın 1X RPM frekansında yüksek sinüzoidal genlik verir ve yatay ile dikey ölçümler arasında yaklaşık 90 derece faz farkı görülür.,text_parent_28_child_2;text_parent_28_child_3,text_parent_28,fig_p30_vision_0;fig_p59_vision_0,text_parent_34_child_1;text_parent_28_child_2;text_parent_28_child_4;text_parent_34_child_7;text_parent_28_child_0,text_parent_34;text_parent_28,,False,0.5,0.2,1.0,0.5,0.38685280723454163,1.0,0.5,1.0,0.5,0.6309297535714575,0.0,0.95,0.9564889451165024,0.5888888888692593,1.0
+q_016,misalignment,Açısal eksen kaçıklığı (Angular Misalignment) ve paralellik kaçıklığı (Parallel Misalignment) titreşim spektrumunu nasıl etkiler?,"**Açısal Kaçıklık (Angular Misalignment) ve Paralel Kaçıklık (Parallel Misalignment) – Spektrum Etkileri**
+
+| Özellik | Açısal Kaçıklık | Paralel Kaçıklık |
+|---------|----------------|------------------|
+| **Dominant titreşim yönü** | Axial | Radial |
+| **Önemli frekans bileşenleri** | 1× RPM (axial) – genellikle 1× ve 2× RPM birlikte görülür. Şiddetli durumlarda 3×‑8× RPM’ye kadar yüksek harmonikler ortaya çıkabilir. | 2× RPM (radial) – 2 darbe per döngü nedeniyle 2× RPM belirgindir. 1× RPM de görülebilir; şiddetli durumda 3×‑8× RPM’ye kadar yüksek harmonikler oluşabilir. |
+| **Faz ilişkisi** | Ölçüm noktaları (motor ve yük) arasında **aynı fazda** (in‑phase) aksiyel titreşim. Ölçüm yönleri ters alınırsa faz farkı gözlenir. | Ölçüm noktaları arasında **≈180° faz farkı** (karşı‑faz) radyal titreşim. |
+| **Spektrum şekli** | Çift tepe (1× ve 2×) ve yüksek harmoniklerin amplitüdü, kullanılan kuplaj tipine ve yapısına bağlı olarak değişir. | 2× RPM tepesinin genellikle 1× RPM’den daha yüksek olduğu görülür; kuplaj yapısı amplitüd oranını etkiler. Şiddetli kaçıklıkta yüksek‑frekans harmonik serileri görülebilir. |
+| **Diğer belirtiler** | Kuplajda gevşeklik veya diğer bağlantı problemleriyle karıştırılabilir. | Tek başına saf paralel kaçıklık nadirdir; çoğu zaman açısal kaçıklıkla birlikte görülür. |
+
+**Özet:**  
+- **Açısal kaçıklık** → Axial titreşimde 1× RPM belirgin, 2× RPM ve daha yüksek harmonikler de ortaya çıkabilir; iki ölçüm noktasında aynı fazda titreşim gözlenir.  
+- **Paralel kaçıklık** → Radial titreşimde 2× RPM baskındır, 1× RPM de bulunabilir; iki nokta arasında yaklaşık 180° faz farkı vardır. Şiddetli kaçıklıkta yüksek‑frekans harmonik serileri görülür.
+
+---
+
+### Önerilen Saha Müdahale ve Bakım Adımları
+1. **Kuplaj hizalamasını kontrol edin** – Hem açısal hem de paralel hataları gidermek için şaft uçlarını lazer/çift‑bilyalı ölçüm cihazlarıyla hizalayın.  
+2. **Kuplaj ve bağlantı elemanlarını sıkın** – Cıvata tork değerlerini üreticinin tavsiye ettiği seviyeye getirerek gevşekliği ortadan kaldırın.  
+3. **Şaft ve rulman faz analizini yapın** – Aynı şaft üzerindeki iki yatak arasındaki faz farkı (bent shaft) ile kuplaj üzerindeki faz farkını (misalignment) ayırt etmek için iki noktalı ölçüm uygulayın.  
+4. **Kuplaj tipine uygun bakım** – Elastomerik, metal‑metal veya esnek kuplajların durumunu (aşınma, yıpranma) inceleyin; gerektiğinde değiştirin.  
+5. **ISO 10816 / ISO 20816 titreşim şiddeti sınırlarını gözden geçirin** – Ölçülen RMS değerlerini ilgili sınıflandırma tablosu ile karşılaştırarak bakım periyodunu belirleyin.
+
+Bu adımlar, spektrumda gözlenen 1×‑2×‑harmonik karakteristiklerine göre kaçıklık tipini doğrulayıp, sorunu etkili bir şekilde gidermeye yardımcı olacaktır.",False,,"Açısal eksen kaçıklığı eksenel (axial) yönde baskın 1X ve 2X RPM genlikleri üretirken, paralellik kaçıklığı radyal yönde 2X RPM genliğini öne çıkarır ve 180 derece faz farkı gösterir.",text_parent_31_child_0;text_parent_31_child_3;text_parent_31_child_2,text_parent_31,fig_p35_vision_0;fig_p35_vision_1;fig_p36_vision_7,text_parent_31_child_3;text_parent_31_child_4;text_parent_31_child_2;text_parent_31_child_0;text_parent_31_child_1,text_parent_31,,False,1.0,0.6,1.0,1.0,0.9060254355346823,1.0,1.0,1.0,1.0,1.0,0.0,0.7894736842105263,0.792153816632633,0.99999999998,1.0
+q_017,looseness,Mekanik gevşeklik (Mechanical Looseness) arızası spektrumda hangi harmonikleri ve karakteristikleri oluşturur?,"**Mekanik Gevşeklik (Mechanical Looseness) – Spektrumda Oluşan Harmonikler ve Karakteristik Özellikler**
+
+| Özellik | Açıklama (Dokümantasyondan) |
+|---------|----------------------------|
+| **Harmonik Yoğunluğu** | Gevşek parçaların doğrusal olmayan yanıtı nedeniyle FFT’de **çok sayıda yüksek mertebeden harmonik** (3×, 4×, … 10×‑20× RPM) görülür. |
+| **Alt‑harmonikler** | Özellikle **½× RPM, ⅓× RPM** ve bunların türevleri (1½×, 2½× vb.) belirgin şekilde ortaya çıkar. |
+| **Spektrum Şekli** | Zaman dalga formunun kesilmesi (truncation) sonucu **geniş ve dağınık bir spektrum** elde edilir; tek bir belirgin tepe yerine bir dizi tepe görülür. |
+| **Faz Davranışı** | Faz ilişkileri **kararsız ve ölçümden ölçüme büyük değişiklik gösterir**; aynı ölçümde bile rotorun konum değişikliği fazı etkileyebilir. |
+| **Yön Bağımlılığı** | Ölçüm yönüne (radialda 30° aralıklarla) göre **okunaklı farklılıklar** görülür; bazı yönlerde çok yüksek amplitüd, diğerlerinde düşük olabilir. |
+| **Kaynak Lokasyonları** | - İç montaj gevşekliği (rulman kapağı, sleeve, impeller vb.)  <br> - Makine‑taban plakası arasındaki gevşeklik (pillow‑block cıvataları, çerçeve çatlakları) <br> - Yapısal gevşeklik/soft‑foot (taban, ayak, temelde gevşek tutma cıvataları, bozulmuş harç) |
+| **ISO 10816/20816 Bağlantısı** | Bu tip geniş ve çoklu harmonik içeren spektrum, **ISO 10816‑2**’de tanımlanan “yüksek harmonik içeriği ve kararsız faz” uyarı seviyeleriyle uyumludur; titreşim şiddeti sınırları aşılırsa bakım/onarım gerekliliği ortaya çıkar. |
+
+---
+
+### Önerilen Saha Müdahale ve Bakım Adımları
+1. **Gevşek Parçaların Fiziksel Kontrolü** – İlgili rulman kapağı, sleeve, impeller ve pillow‑block cıvatalarını sökerek gevşeklik, aşınma veya kırık olup olmadığını kontrol edin. Gerekirse yeniden sıkın veya yedek parça ile değiştirin.  
+2. **Montaj Sıkılığı ve Tork Kontrolü** – Tüm montaj cıvalarını üretici tavsiye edilen tork değerlerine göre yeniden torklayın; özellikle taban plakası ve taşıma ayakları için eşit dağılım sağlayın.  
+3. **Soft‑Foot Düzeltmesi** – Tabana takılan şok emicileri, şim (shim) veya yeniden işlenmiş taban plakası ile ayak düzleştirme (shimleme) yaparak ayak‑taban distorsiyonunu ortadan kaldırın.  
+4. **Vibrasyon Ölçüm Tekrarı ve Faz Analizi** – Düzeltme sonrası aynı konum ve yönlerde (30° aralıklarla) spektrum ve faz ölçümü alarak alt‑harmonik ve faz stabilitesindeki iyileşmeyi doğrulayın.  
+5. **Kayıt ve İzleme** – Düzeltme sonrası elde edilen titreşim seviyelerini ISO 10816‑2 sınırları içinde belgeleyin; periyodik izleme programı oluşturun.  
+
+Bu adımlar, mekanik gevşekliğin spektral belirtilerine dayanarak sorunun kaynağını izole eder ve titreşim seviyesini kabul edilebilir sınırlara çeker.",False,,"Mekanik gevşeklik spektrumda çok sayıda 1X, 2X, 3X gibi harmonikler ile 0.5X gibi alt-harmonikler (sub-harmonics) üretir ve zaman dalga formunda doğrusal olmayan (non-linear) kesik tepeler oluşturur.",text_parent_32_child_0;text_parent_32_child_1,text_parent_32,fig_p37_vision_0;fig_p38_vision_0;fig_p38_vision_1;fig_p60_vision_0,text_parent_32_child_1;text_parent_38_child_1;text_parent_31_child_4;text_parent_32_child_0;text_parent_31_child_3,text_parent_32;text_parent_38;text_parent_31,,False,1.0,0.4,1.0,1.0,0.8772153153380493,1.0,0.3333333333333333,1.0,1.0,1.0,0.0,0.45,0.7940588929417215,0.7499999999625,1.0
+q_018,resonance,Rezonans (Resonance) ve doğal frekans tespiti için Darbe Testi (Bump Test) nasıl uygulanır?,"**Rezonans ve Doğal Frekans Tespiti – Darbe Testi (Bump Test) Uygulama Prosedürü**
+
+| Adım | Açıklama |
+|------|----------|
+| **1. Hazırlık** | • Test edilecek yapı/rotor üzerine uygun bir ivmeölçer (veya akısız ivme sensörü) monte edin.<br>• Sensör kablosunu veri toplama birimine bağlayın ve sensörün referans konumunun sabit olduğundan emin olun. |
+| **2. Etki Uygulama** | • Çekiç (impact hammer) ile yapı üzerine kısa, keskin bir darbe verin.<br>• Darbenin gerçekleştiği an, veri toplama sisteminde zaman ekseninde yaklaşık **100 ms** sonra işaretlenir (örnek dokümantasyonda bu süre belirtilmiştir). |
+| **3. Zaman Dalgası Kaydı** | • Darbe sonrası oluşan serbest titreşimler zaman dalgası (time‑waveform) olarak kaydedilir.<br>• Kayıt süresi en az **500 ms – 1 s** olmalıdır; bu aralık içinde birden fazla titreşim döngüsü sayılabilir. |
+| **4. Doğal Frekansın Hesaplanması (Zaman Dalgası Yöntemi)** | • Kayıt edilen dalgadan bir periyot (T) ölçülür (örnek: 60 ms periyot → 1 000 cpm).<br>• Doğal frekans **f = 60 s⁻¹ / T (s)** olarak cpm (cycle per minute) biriminde elde edilir. Dokümantasyonda bu yöntemle **≈ 990 cpm** bulunmuştur. |
+| **5. FFT Analizi** | • Aynı veri seti ya da yeni bir darbe ile elde edilen sinyal FFT’ye (Fast Fourier Transform) tabi tutulur.<br>• Spektrumda belirgin bir tepe (dominant peak) doğal frekansı gösterir. Örnekte **≈ 1 046 cpm** tepe değeri rapor edilmiştir. |
+| **6. Sonuç Doğrulama** | • Zaman‑dalga ve FFT sonuçları birbirine yakın olmalıdır (örnek: 990 cpm ↔ 1 046 cpm).<br>• Tekrarlanan ölçümlerle frekansın tutarlılığı ve sönüm oranı (logaritmik azalma) kontrol edilir. |
+| **7. Raporlama** | • Doğal frekans değeri, ölçüm koşulları (sensör konumu, darbe şiddeti) ve sönüm karakteristiği rapor edilir.<br>• Gerekirse, bu frekansın kritik hız (critical speed) ile çakışıp çakışmadığı değerlendirilir (örnek: 2 500 cpm doğal frekans → kritik hız riski). |
+
+### Önemli Notlar
+- **Doğal frekans, hızdan bağımsızdır**; bu, titreşim spektrumunda sabit bir tepe olarak ortaya çıkar ve rezonansın tespiti için kritik bir göstergedir.  
+- **Bump test offline (desteklenmemiş rotor) uygulanırken** elde edilen kritik hız değeri, gerçek çalışma koşullarındaki (akışkan içinde, yataklı) kritik hızdan farklı olabilir; bu nedenle sonuçlar sadece bir tahmin olarak değerlendirilmelidir.  
+- Ölçüm sırasında **logaritmik sönüm** gözlemlenirse, titreşim seviyesi ISO 10816/ISO 20816 titreşim şiddeti sınıflandırma sınırları içinde değerlendirilmelidir.
+
+Bu adımları izleyerek, bir makinenin ya da yapının doğal frekansı ve potansiyel rezonans noktaları güvenilir bir şekilde belirlenebilir.",False,,Darbe testinde makine dururken yapıya yumuşak bir çekiçle vurulur ve ivmeölçer ile sistemin doğal frekansındaki serbest sönümlü salınım yanıtı kaydedilir.,text_parent_33_child_0;text_parent_33_child_2,text_parent_33,,text_parent_33_child_0;text_parent_33_child_2;text_parent_46_child_1;text_parent_33_child_3;text_parent_33_child_1,text_parent_33;text_parent_46,,False,1.0,0.4,1.0,1.0,1.0,1.0,0.5,1.0,1.0,1.0,0.0,0.68,0.8883117756912051,0.8874999999778125,1.0
+q_019,flow_hydrodynamic,Pompalarda kanat geçiş frekansı (Vane Pass Frequency - VPF) ve hidrodinamik kuvvetler spektrumu nasıl etkiler?,"**Kanat Geçiş Frekansı (Vane Pass Frequency – VPF) ve Hidrodinamik Kuvvetlerin Spektrum Üzerindeki Etkisi**
+
+| Açıklama | Spektrumda Görülen Etki |
+|----------|--------------------------|
+| **VPF tanımı** – VPF = kanat (veya van) sayısı × RPM. | FFT’de **temel bir tepe (1× VPF)** ve **harmonikleri (2×, 3× … VPF)** olarak belirgin, dar bantlı zirveler ortaya çıkar. |
+| **GAP (rotor‑stator boşluğu) problemleri** – eşit olmayan boşluk, aşınma halkasının şaftta sıkışması, difüzör kaynak hataları vb. | VPF ve özellikle **yüksek‑amplitüdlü VPF harmonikleri** spektrumda artar; amplitüd artışı, bu mekanik kusurlara işaret eder. |
+| **Doğal frekans ile çakışma** – VPF (ve/veya harmonikleri) sistemin doğal titreşim frekansına denk geldiğinde | **Rezonnans tepe noktası** oluşur; VPF’nin genliği anormal derecede yükselir ve faz kayması (≈ 90°) gözlemlenebilir. |
+| **Eccentric (merkez dışı) rotor konumu, ani bükülmeler, akış engelleri** | VPF amplitüdünün artması ve bazen **ekstra düşük‑frekans bileşenler** (akış bozulmasından kaynaklanan) görülür. |
+| **Kavite (cavitation)** – Yüksek‑frekanslı, rastgele geniş bant enerji (≈ 9‑30 × RPM) | Spektrumda **bant geniş bir yüksek‑frekans gürültü** (broadband) görülür; bu gürültü VPF harmonikleriyle **üst üste binerek** daha karmaşık bir görünüm oluşturur. |
+
+- **VPF’nin spektral imzası**: Dar, keskin bir tepe (veya bir dizi tepe) rotor hızıyla orantılı olarak konumlanır; harmonikler genellikle 2×, 3× … VPF frekansında da ortaya çıkar.
+- **Hidrodinamik kuvvetler** (kanat‑geçiş etkisi) bu tepeyi oluşturur; amplitüd seviyesi, boşluk eşitliği, akış düzeni ve bileşen bütünlüğüyle doğrudan ilişkilidir.
+- **ISO 10816/ISO 20816** çerçevesinde, VPF‑harmoniklerinin amplitüdü **“uyarı” (warning) bölgesine** yaklaştığında bakım ihtiyacı ortaya çıkar; kritik seviyeye (danger) ulaşması durumunda acil müdahale gerekir.
+
+---
+
+### Önerilen Saha Müdahale ve Bakım Adımları
+1. **Rotor‑stator boşluğunu ölç ve eşitle** – Tasarımda belirtilen %4‑6 impeller çapı aralığına (veya üretici tavsiyesine) uygun olduğundan emin ol.  
+2. **Aşınma halkası ve difüzör kaynaklarını kontrol et** – Sıkışma, aşınma veya kırık kaynak izleri VPF amplitüdünü artırabilir; gerekirse temizle veya yeniden monte et.  
+3. **Rotor hizalamasını ve eksantrikliğini doğrula** – Şaft‑rotor eksen hizalaması ölçümleri (örnek: dial‑indicator) yap, gerekirse yeniden hizala.  
+4. **Akış yolunda engelleri ve ani bükülmeleri gider** – Boru/düşme hatlarını, dirsekleri ve vanaları incele; tıkanıklık veya aşırı bükülme varsa düzelt.  
+5. **Kavite belirtilerini izleyerek (suction‑piping, pompa gövdesi) basınç‑sıvı koşullarını optimize et** – Çalışma noktası tasarımın “cavitation‑free” bölgesinde tutularak yüksek‑frekans broadband titreşimlerin önüne geç.  
+
+Bu adımlar, VPF‑temelli spektral anormalliklerin kaynağını ortadan kaldırarak titreşim seviyesini ISO 10816/20816 standartlarına uygun bir aralığa çekmeye yardımcı olur.",False,,Vane pass frekansı (Kanat sayısı x RPM) hidrodinamik akış dengesizliklerinde veya kanat-volüt mesafesi uygunsuz olduğunda yüksek genlikli VPF ve harmoniklerini üretir.,text_parent_36_child_0;text_parent_36_child_1,text_parent_36,fig_p45_vision_0,text_parent_36_child_0;text_parent_37_child_0;text_parent_36_child_2;text_parent_36_child_1;text_parent_33_child_1,text_parent_36;text_parent_37;text_parent_33,,False,1.0,0.4,1.0,1.0,0.8772153153380493,1.0,0.3333333333333333,1.0,1.0,1.0,0.0,0.8095238095238095,0.7248660983529515,0.8055555555287036,1.0
+q_020,bearing_fault,Rulman arızalarının gelişme aşamalarında (Stage 1 - Stage 4) frekans spektrumu ve ultrasonic / envelope sinyalleri nasıl değişir?,"**Rulman arızalarının gelişme aşamaları (Stage 1‑4) – Frekans spektrumu ve ultrasonic / envelope sinyallerinin evrimi**
+
+| Aşama | Spektral bölgeler (kcpm / kHz) | Envelope‑tabanlı ultrasonik sinyal özellikleri | Tipik amplitüd / trend |
+|-------|--------------------------------|-----------------------------------------------|------------------------|
+| **Stage 1** | • **Zone A** – makine RPM ve harmonikleri (1× RPM, 2× RPM …)<br>• **Zone B** – bearing defect frekansları (5‑30 kcpm ≈ 0.08‑0.5 kHz)<br>• **Zone C** – doğal bileşen frekansları henüz görülmez<br>• **Zone D** – HFD (≥120 kcpm ≈ 2 kHz ve üzeri) çok zayıf | Envelope yöntemi, yüksek‑frekans “impuls” bileşenlerini (genellikle 2‑60 kHz, yani 120‑3600 kcpm) ortaya çıkarır. Bu frekanslarda düşük ama belirgin bir “spike” enerjisi (gSE, SEE vb.) görülür. | **Düşük amplitüd**; sadece tekil, dar tepe noktaları (spike) görülür. 1× RPM bileşeni hâlâ baskındır, defect frekansları hâlâ çok zayıftır. |
+| **Stage 2** | • **Zone A** aynı kalır.<br>• **Zone B** (5‑30 kcpm) artan enerji.<br>• **Zone C** – doğal rezonanslar ortaya çıkar (30‑120 kcpm ≈ 0.5‑2 kHz).<br>• **Zone D** – HFD enerjisi **yaklaşık iki kat** artar. | Envelope spektrumunda, defect frekansları (BPFI, BPFO, FTF, BSF) yanında **defect ± RPM** yan bantları belirginleşir. Ultrasonik bölge (2‑60 kHz) enerjisi artar, tepe genişliği hafifçe artar. | **Orta seviyeli amplitüd**; defect frekansları netleşir, yan bantlar (defect ± RPM) görülmeye başlar. HFD bölgesindeki enerji iki katına çıkar. |
+| **Stage 3** | • **Zone A** hâlâ mevcut, 1× RPM amplitüdü artabilir.<br>• **Zone B** – defect frekansları ve **çoklu yan bantlar** (defect ± n·RPM) belirgin.<br>• **Zone C** – doğal bileşen frekansları (30‑120 kcpm) güçlü ve yan bantlarla süslenir.<br>• **Zone D** – HFD enerjisi **tekrar iki kat** artar. | Envelope sinyali, **keskin, ayrık tepe noktaları** (defect frekansları ve harmonikleri) gösterir. Yan bantların sayısı ve genişliği artar; spektrumda “çizgi‑çizgi” bir yapı oluşur. Ultrasonik bölge (2‑60 kHz) içinde yüksek‑enerjili, dar tepe noktaları hâkimdir. | **Yüksek amplitüd**; defect frekansları ve yan bantları net, güçlü ve çoklu. Bu aşamada genellikle **yedek rulman değişimi** önerilir. |
+| **Stage 4** | • **Zone A** – 1× RPM ve yüksek harmonikler artar, geniş bir “bant” oluşturur.<br>• **Zone B** – defect frekansları **büyük bir broadband gürültüye** karışır.<br>• **Zone C** – doğal frekanslar da geniş bir gürültü tabanına erir.<br>• **Zone D** – HFD bölgesi **büyük bir yüksek‑frekans gürültü zeminine** dönüşür (geniş, düşük‑tepe, yüksek‑genişlik). | Envelope spektrumunda **tekil tepe noktaları kaybolur**; defect frekansları ve doğal rezonanslar bir **broadband yüksek‑frekans gürültü zeminine** dönüşür. Ultrasonik (2‑60 kHz) ve daha yüksek (≥20 kHz) frekanslarda enerji artar, ancak tepe‑tepe yapısı kaybolur. | **Büyük broadband gürültü**; amplitüd önce düşer (zaman içinde “bölge genişler”), ardından tekrar yükselir. 1× RPM ve harmoniklerin amplitüdü de artar, bu da artan boşluk ve rotor‑rulman boşluğunu gösterir. |
+
+### Özet
+- **Stage 1**: Sadece çok düşük seviyeli ultrasonik “spike”lar; defect frekansları zayıf, yan bant yok.
+- **Stage 2**: Defect frekansları ve yan bantlar (defect ± RPM) ortaya çıkar; HFD enerjisi iki kat artar.
+- **Stage 3**: Keskin, ayrık defect tepe noktaları ve çoklu yan bantlar; HFD enerjisi tekrar iki kat artar – tipik olarak “değişim” aşaması.
+- **Stage 4**: Defect ve doğal frekanslar bir broadband yüksek‑frekans gürültü zeminine dönüşür; 1× RPM ve harmonikler de artar, rotor‑rulman boşlukları büyür.
+
+Bu evrim, **",False,,"Aşama 1-2 yüksek frekanslı ultrasonic/envelope aralığında (BPFO, BPFI vb.) sinyaller verirken, Aşama 3-4 arızalarında spektruma temel harmonikler ve 1X yan bantlar eklenir, sonunda taban gürültüsü yükselir.",text_parent_39_child_4;text_parent_39_child_5;text_parent_27_child_1;text_parent_39_child_7;text_parent_39_child_8,text_parent_39;text_parent_27,fig_p51_vision_0;fig_p52_vision_0;fig_p52_vision_1;fig_p53_vision_0,text_parent_27_child_1;text_parent_31_child_3;text_parent_39_child_5;text_parent_39_child_4;text_parent_27_child_0,text_parent_27;text_parent_31;text_parent_39,,False,0.6,0.6,1.0,1.0,0.6548086577531307,1.0,0.6666666666666666,1.0,1.0,0.9197207891481876,0.0,0.5483870967741935,0.9422710737503663,0.4166666666458333,1.0
