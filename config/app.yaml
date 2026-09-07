@@ -24,7 +24,7 @@ llm:
   provider: "groq"
   model: "openai/gpt-oss-120b"
   temperature: 0.2
-  max_tokens: 4096
+  max_tokens: 1500
   timeout: 60
   reasoning_format: "parsed"
 
@@ -63,6 +63,7 @@ paths:
   docstore_path: "./docstore.db"
   gold_dataset_path: "./data/evaluation/retrieval_benchmark_dev8.json"
   eval_output_dir: "./data/eval_reports"
+  eval_tuning_output_dir: "./data/eval_reports/tuning_results"
   text_chunks_json: "./data/processed/text_chunks.json"
   visual_chunks_json: "./data/processed/visual_chunks.json"
   test_signal_path: "data/signal_test/105.mat"
