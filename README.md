@@ -15,6 +15,12 @@
 
 ---
 
+https://github.com/user-attachments/assets/2e704035-08ae-499f-8763-ba698900ba91
+
+> **Note:** Approximately 30 seconds of end-to-end latency during the diagnostic pipeline (DSP feature extraction, vector retrieval, and LLM reasoning) has been trimmed from the demo for a smoother viewing experience.
+
+---
+
 ## Table of Contents
 1. [Project Overview](#1-project-overview)
 2. [Problem Definition](#2-problem-definition)
@@ -143,6 +149,9 @@ VibraDiag/
 │   ├── processed/                   # Extracted text/visual JSON chunks
 │   └── signal_test/                 # Test vibration signals (CWRU .mat, .wav, .csv)
 ├── docstore.db                      # SQLite Parent Document Store
+├── notebooks/                       # Jupyter notebooks for DSP validation & evaluation analysis
+│   ├── dsp_test_results.ipynb
+│   └── retrieval_generation_evalresults.ipynb
 ├── qdrant_data/                     # Persistent local Qdrant vector database
 ├── sample_outputs/                  # Exported interactive Plotly HTML diagnostic charts
 ├── assets/                          # Static PNG charts and diagrams for documentation
