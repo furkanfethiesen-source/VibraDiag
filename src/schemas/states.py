@@ -44,6 +44,8 @@ class VibraDiagMainState(TypedDict, total=False):
     merged_context: str
 
     llm_response: str
+    is_truncated: bool
+    finish_reason: str
 
     errors: Annotated[list[str], operator.add]
 

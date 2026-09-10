@@ -272,15 +272,55 @@ def self_corrector_node(
             }],
         }
 
-    # Kesilmiş yanıt tespiti: cümle ortasında biten yanıtlar
+    # Kesilmiş yanıt tespiti: continuation sonrasında bile cümle ortasında biten yanıtlar
+    is_truncated = bool(state_dict.get("is_truncated", False))
     if llm_response and not generation_failed:
         stripped = llm_response.rstrip()
-        if stripped and stripped[-1] not in ".!?:;)]\"\n—" and len(stripped) > 200:
+        appears_truncated = (stripped and stripped[-1] not in ".!?:;)]\"\n—" and len(stripped) > 200)
+        if (is_truncated or appears_truncated) and generation_attempts < max_generation:
+            trunc_reason = (
+                "Üretilen yanıt uzunluk sınırına ulaştığı için yarıda kesildi. "
+                "Lütfen yanıtını gereksiz laf kalabalığından kaçınarak, daha öz ve belirlenen başlıklar altında eksiksiz tamamla."
+            )
             logger.warning(
-                "⚠️ LLM response appears truncated (ends with: '...%s'). "
-                "Likely hit max_tokens limit.",
+                "⚠️ LLM response remains truncated (ends with: '...%s'). Routing to retry_generation with concise directive.",
                 stripped[-30:],
             )
+            new_generation_attempts = generation_attempts + 1
+            new_total_attempts = total_attempts + 1
+            updated_attempts = {
+                "retrieval": retrieval_attempts,
+                "generation": new_generation_attempts,
+                "total": new_total_attempts,
+            }
+            decision = CorrectionDecision(
+                status="retry_generation",
+                trigger_reasons=["output_truncated"],
+                checker_results={},
+                total_tokens=TokenUsageInfo(),
+                total_latency_ms=(time.time() - start_total_time) * 1000,
+                needs_review=False,
+            )
+            _dispatch_corrector_telemetry(
+                session_id=session_id,
+                query=user_query,
+                decision=decision,
+                attempt_number=new_total_attempts,
+            )
+            return {
+                "route_decision": "retry_generation",
+                "is_flagged": False,
+                "flag_reason": None,
+                "previous_failure_reason": trunc_reason,
+                "correction_attempts": updated_attempts,
+                "checker_results": {},
+                "corrector_history": [{
+                    "cycle": new_total_attempts,
+                    "decision": "retry_generation",
+                    "reason": trunc_reason,
+                }],
+            }
+
 
     dsp_result: CheckerResult = DSPConsistencyChecker.check(
         generated_text=llm_response,
