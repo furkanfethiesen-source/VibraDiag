@@ -65,6 +65,7 @@ class DiagnosisResponse(BaseModel):
     sub_queries: list[str] | None = Field(default=None, description="Sub-queries produced by query decomposer")
     verification: VerificationMetricsDTO | None = Field(default=None, description="Self-corrector verification outcome")
 
+    is_truncated: bool = Field(default=False, description="Whether LLM output was truncated due to length limit")
     errors: list[str] = Field(default_factory=list, description="List of non-fatal or diagnostic warnings/errors")
 
 
