@@ -21,6 +21,7 @@ load_dotenv()
 from groq import Groq
 from langsmith import traceable
 from config_loader import load_appcfg
+from .prompt_builder import repair_truncated_markdown
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +36,11 @@ class GroqClient:
         provided_cfg = {**llm_cfg, **(config or {})}
         self.model = provided_cfg.get("model", "openai/gpt-oss-120b")
         self.temperature = float(provided_cfg.get("temperature", 0.2))
-        self.max_tokens = int(provided_cfg.get("max_tokens", 1500))
+        self.max_tokens = int(provided_cfg.get("max_tokens", 2400))
         self.reasoning_format = provided_cfg.get("reasoning_format", "parsed")
+
+        self.last_finish_reason: str = "stop"
+        self.was_truncated: bool = False
 
         self.api_key = api_key or os.getenv("GROQ_API_KEY")
         self._client = None
@@ -124,6 +128,97 @@ class GroqClient:
             logger.warning(f"Gemini fallback generation failed: {e}")
             return None
 
+    def _stitch_continuation(self, partial: str, continuation: str) -> str:
+        """
+        Kısmi metin ile devam metnini tekrarları temizleyerek dikişsiz birleştirir.
+        """
+        if not continuation:
+            return partial
+        if not partial:
+            return continuation
+
+        p_stripped = partial.rstrip()
+        c_stripped = continuation.lstrip()
+
+        # Eğer continuation, partial'ın son birkaç kelimesiyle başlıyorsa tekrarı önle
+        words_p = p_stripped.split()
+        for overlap_len in range(min(len(words_p), 8), 0, -1):
+            overlap_phrase = " ".join(words_p[-overlap_len:]).lower()
+            if c_stripped.lower().startswith(overlap_phrase):
+                c_stripped = c_stripped[len(overlap_phrase):].lstrip()
+                break
+
+        sep = " "
+        if p_stripped.endswith(("\n", " ", "-", "—")):
+            sep = ""
+
+        stitched = p_stripped + sep + c_stripped
+        return repair_truncated_markdown(stitched)
+
+    def _continue_truncated_response(
+        self,
+        messages: list[dict[str, str]],
+        partial_content: str,
+        temperature: float,
+    ) -> str:
+        """
+        finish_reason == 'length' durumunda modelin baştan başlamasını engelleyerek
+        kaldığı yerden tamamlamasını sağlayan tek seferlik ek çağrı yapar.
+        """
+        if not partial_content or len(partial_content.strip()) < 30:
+            return partial_content
+
+        clean_partial = (
+            partial_content.strip()
+            if self.reasoning_format == "parsed"
+            else self._clean_reasoning_tags(partial_content).rstrip()
+        )
+        last_snippet = clean_partial[-100:].replace("\n", " ")
+
+        continuation_messages = list(messages)
+        continuation_messages.append({"role": "assistant", "content": clean_partial})
+
+        follow_up_prompt = (
+            f"[SİSTEM TAMAMLAMA DİREKTİFİ]\n"
+            f"Önceki yanıtın uzunluk sınırına ulaştığı için tam olarak şu noktada yarıda kesildi:\n"
+            f"\"{last_snippet}\"\n\n"
+            f"KESİN KURALLAR:\n"
+            f"1. ASLA baştan başlama, giriş cümlesi kurma, özetleme veya önceki yazdıklarını tekrarlama.\n"
+            f"2. YALNIZCA cümlenin/kelimenin kaldığı noktadan itibaren eksik kalan kısımları tamamla.\n"
+            f"3. Kalan maddeleri tamamlayıp yanıtı sonlandır."
+        )
+        continuation_messages.append({"role": "user", "content": follow_up_prompt})
+
+        logger.info(
+            "Requesting seamless continuation for truncated response (partial length: %d chars, last: '...%s')",
+            len(clean_partial),
+            last_snippet[-40:],
+        )
+
+        try:
+            resp = self.client.chat.completions.create(
+                model=self.model,
+                messages=continuation_messages,
+                temperature=temperature,
+                max_tokens=800,
+                reasoning_format=self.reasoning_format,
+            )
+            continuation_text = resp.choices[0].message.content or ""
+            if self.reasoning_format != "parsed":
+                continuation_text = self._clean_reasoning_tags(continuation_text)
+
+            stitched = self._stitch_continuation(clean_partial, continuation_text)
+            logger.info(
+                "Continuation succeeded (stitched total length: %d chars)", len(stitched)
+            )
+            return stitched
+        except Exception as cont_err:
+            logger.warning(
+                "Continuation call failed: %s. Returning repaired partial response.",
+                cont_err,
+            )
+            return repair_truncated_markdown(clean_partial)
+
     @traceable(name="groq_generate")
     def generate(
         self,
@@ -169,20 +264,24 @@ class GroqClient:
                 choice = resp.choices[0]
                 content = choice.message.content or ""
 
-                # finish_reason kontrolü: kesilme tespiti
+                # finish_reason kontrolü: kesilme tespiti ve dikişsiz tamamlama
                 if choice.finish_reason == "length":
+                    self.last_finish_reason = "length"
+                    self.was_truncated = True
                     logger.warning(
                         "⚠️ LLM output truncated (finish_reason='length'). "
                         "Output length: %d chars, max_tokens: %d. "
-                        "Consider increasing max_tokens in config.",
+                        "Triggering seamless suffix continuation...",
                         len(content), tokens,
                     )
+                    content = self._continue_truncated_response(messages, content, temp)
+                else:
+                    self.last_finish_reason = choice.finish_reason or "stop"
+                    self.was_truncated = False
 
-                # reasoning_format="parsed" ise content zaten temiz,
-                # "raw" ise eski temizleme mantığı çalışır
                 if self.reasoning_format == "parsed":
-                    return content.strip()
-                return self._clean_reasoning_tags(content)
+                    return repair_truncated_markdown(content.strip())
+                return repair_truncated_markdown(self._clean_reasoning_tags(content))
 
             except RateLimitError as rle:
                 last_error = rle

@@ -242,7 +242,7 @@ def build_initial_signal_query(signal_data: dict[str, Any] | None) -> str:
         f"{machine_name} makinesinin {measurement_point} bölgesinde {fault_name} tespiti yapılmıştır.\n"
         f"ISO Şiddet Değerlendirmesi: Bölge {iso_zone} ({iso_meaning}).\n"
         f"Titreşim Metrikleri: RMS {rms_str} mm/s, Peak {peak_str}, Crest Factor {crest_str}, Kurtosis {kurt_str}.\n\n"
-        "Bu hatayı teknik olarak detaylıca açıkla, olası kök nedenleri sırala ve bu durum için yapılması gereken acil müdahale ile önleyici bakım adımlarını detaylandır."
+        "Bu arızayı sinyal bulguları ve ISO şiddeti doğrultusunda teknik olarak açıkla; olası kök nedenleri ve önerilen saha bakım adımlarını maddeler halinde belirt."
     )
     return query_text
 
@@ -458,4 +458,34 @@ def build_synthesis_directive(citation_map: dict[str, str] | None = None) -> str
         "Yanıtın sonunda 'Kullanılan Kaynaklar:' başlığı altında kaynak listesi ver.",
     )
     return directive.strip()
+
+
+def repair_truncated_markdown(text: str) -> str:
+    """
+    Kapanmamış markdown belirteçlerini (kod blokları, kalın metin, tablolar) onarır.
+    """
+    if not text:
+        return ""
+
+    repaired = text.rstrip()
+
+    # 1. Kod blokları onarımı (```)
+    code_block_count = repaired.count("```")
+    if code_block_count % 2 != 0:
+        repaired += "\n```"
+
+    # 2. Kalın metin onarımı (**)
+    # Çift yıldızların sayısını kontrol et
+    bold_count = repaired.count("**")
+    if bold_count % 2 != 0:
+        repaired += "**"
+
+    # 3. İtalik tek yıldız onarımı (*) (kalın olanları çıkardıktan sonra)
+    text_without_bold = repaired.replace("**", "")
+    italic_count = text_without_bold.count("*")
+    if italic_count % 2 != 0:
+        repaired += "*"
+
+    return repaired
+
 

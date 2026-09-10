@@ -144,6 +144,8 @@ def generation_node(state: Any) -> dict[str, Any]:
         return {
             "llm_response": response_text,
             "active_query": user_query,
+            "is_truncated": getattr(client, "was_truncated", False),
+            "finish_reason": getattr(client, "last_finish_reason", "stop"),
         }
     except Exception as err:
         logger.error("Failed to generate response in generation_node: %s", err, exc_info=True)
