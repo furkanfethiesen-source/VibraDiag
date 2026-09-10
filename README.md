@@ -168,6 +168,11 @@ VibraDiag/
 │   ├── ui/                          # Streamlit application, custom components, Plotly cards
 │   ├── config_loader.py             # YAML configuration parser
 │   └── main_graph.py                # Main LangGraph compiled workflow
+├── tests/                           # Unit and integration test suites
+│   ├── deterministic_test/          # Isolated deterministic DSP & rule engine unit tests
+│   ├── test_main_graph.py           # LangGraph workflow integration tests
+├── CHANGELOG.md                     # Chronological development history and milestone logs
+├── DECISIONS.md                     # Architectural Decision Records (ADRs) and design rationale
 ├── pyproject.toml                   # Project dependencies and packaging configuration
 ├── uv.lock                          # Locked dependency tree
 └── README.md                        # Project documentation
@@ -244,6 +249,21 @@ Open a second terminal window and run:
 uv run streamlit run src/ui/app.py --server.port 8501
 ```
 *Access the web dashboard in your browser at:* `http://localhost:8501`
+
+### Step 8: Run Tests (Unit & Integration)
+Run the test suites using `pytest`:
+
+```bash
+# Run deterministic DSP & signal processing unit tests (95 tests, < 2s, in-memory synthetic signals)
+uv run pytest tests/deterministic_test/ -v
+
+# Run deterministic unit tests with code coverage report
+uv run pytest tests/deterministic_test/ --cov=src/deterministic_tools --cov-report=term-missing
+
+# Run a specific unit test module (e.g. signal processing or reader)
+uv run pytest tests/deterministic_test/test_signal_processing.py -v
+```
+*(Note: If using standard virtual environment without `uv`, run `.venv/bin/pytest tests/deterministic_test/ -v`)*
 
 ---
 
