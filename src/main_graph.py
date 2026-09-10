@@ -417,6 +417,7 @@ def finalize_response_node(state: VibraDiagMainState) -> dict[str, Any]:
 
     return {
         "llm_response": llm_response,
+        "is_truncated": state.get("is_truncated", False),
         "messages": [ai_msg],
     }
 
